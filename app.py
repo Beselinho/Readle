@@ -6,7 +6,7 @@ from firebase_admin import credentials, firestore, auth
 from datetime import timedelta
 import os
 from dotenv import load_dotenv
-
+import firebase_query as qr
 load_dotenv()
 
 
@@ -27,9 +27,7 @@ cred = credentials.Certificate("firebase-auth.json")
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
-
-
-########################################
+########################################D
 """ Authentication and Authorization """
 
 # Decorator for routes that require authentication
@@ -68,7 +66,12 @@ def authorize():
 
 @app.route('/')
 def home():
-    return render_template('home.html')
+    books = qr.get_all_docs(db,"Book")
+    print(books)
+    if books:
+        return render_template('home.html',books=books)
+    else:
+        return "error home page", 404
 
 @app.route('/book/<book_id>')
 def book_page(book_id):
@@ -145,10 +148,22 @@ def dashboard():
 
     return render_template('dashboard.html')
 
-
-
-
-
+# data = {
+#     "Author": "Ioan Slavici",
+#     "Genre": "Drama",
+#     "Image": "\\rand1",
+#     "Name": "Mara"
+# }
+# qr.insert_document(db,'Book',data)
+# books = qr.get_all_docs(db,'Book')
+# print(books[0])
+# mara = qr.get_documents_with_status(db,'Book','Name','==','Mara')
+# # qr.delete_document(db,"Book",mara[0][1])
+# # print(mara)
+# id = mara[0][1]
+# qr.update_existing_document(db,'Book',id,"Name","Mara")
+# print(id)
+# print(mara)
 
 if __name__ == '__main__':
     app.run(debug=True)
