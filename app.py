@@ -27,9 +27,7 @@ cred = credentials.Certificate("firebase-auth.json")
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
-
-
-########################################
+########################################D
 """ Authentication and Authorization """
 
 # Decorator for routes that require authentication
@@ -68,7 +66,12 @@ def authorize():
 
 @app.route('/')
 def home():
-    return render_template('home.html')
+    books = qr.get_all_docs(db,"Book")
+    print(books)
+    if books:
+        return render_template('home.html',books=books)
+    else:
+        return "error home page", 404
 
 @app.route('/login')
 def login():
@@ -125,9 +128,10 @@ def dashboard():
 # }
 # qr.insert_document(db,'Book',data)
 # books = qr.get_all_docs(db,'Book')
-# mara = qr.get_documents_with_status(db,'Book','Name','==','MaRa')
-# qr.delete_document(db,"Book",mara[0][1])
-# print(mara)
+# print(books[0])
+# mara = qr.get_documents_with_status(db,'Book','Name','==','Mara')
+# # qr.delete_document(db,"Book",mara[0][1])
+# # print(mara)
 # id = mara[0][1]
 # qr.update_existing_document(db,'Book',id,"Name","Mara")
 # print(id)
