@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <title>My Book List</title>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f9f9f9;
+    }
+    main {
+      max-width: 1200px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #fff;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+    }
+    h1 {
+      text-align: center;
+      font-weight: 600;
+      margin-bottom: 30px;
+    }
+    .book-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .book-item {
+      display: flex;
+      flex-direction: column;
+      padding: 15px;
+      border-bottom: 1px solid #ddd;
+    }
+    /* .book-item:last-child {
+      border-bottom: none;
+    } */
+    .book-title {
+      font-weight: 700;
+      font-size: 1.2rem;
+      margin: 0 0 5px;
+    }
+    .book-author {
+      font-weight: 500;
+      font-size: 0.9rem;
+      color: #555;
+      margin: 0;
+    }
+    .book-genre {
+      font-size: 0.9rem;
+      color: #777;
+      margin: 0;
+    }
+    a:hover, a:visited, a:link, a:active
+    {
+    text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+
+  {% include 'navbar_public.html' %}
+
+  <main>
+    <h1>My List</h1>
+    <ul class="book-list">
+        {% for book in books %}
+          <li class="book-item">
+            <a href = "{{url_for('book_page', book_id=book['id']) }}", style:text-decorations="none"><span class="book-title">{{ book['Name'] }}</span></a>
+
+            <span class="book-author">by {{ book['Author'] }}</span>
+            <span class="book-genre">Genre : {{ book['Genre'] }}</span>
+          </li>
+        {% endfor %}
+    </ul>
+    
+  </main>
+
+  {% include 'footer.html' %}
+
+  <script src="{{ url_for('static', filename='scripts.js') }}" type="module"></script>
+</body>
+</html>

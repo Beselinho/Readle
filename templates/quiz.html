@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" >
+
+  <title>Quiz {{ book['name'] }}</title>
+
+<style>
+    a:hover, a:visited, a:link, a:active
+    {
+    text-decoration: none;
+    }
+</style>
+
+  </head>
+
+  <body>
+
+    {% include 'navbar_public.html' %}
+    <main>
+        <section class="questions">
+            <h2>Questions</h2>
+        </section>
+
+        <section class="results">
+            <h2>Results</h2>
+            <p>You got <span id="correct">0</span> out of <span id="total">0</span> correct!</p>
+        </section>
+    </main>
+
+    {% include 'footer.html' %}
+
+    <script src="script.js"></script>
+</body>
+
+</html>
+

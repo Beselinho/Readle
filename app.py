@@ -49,7 +49,7 @@ def auth_required(f):
 @app.route('/auth', methods=['POST'])
 def authorize():
     token = request.headers.get('Authorization')
-    if not token or not token.startswith('Bearer '):
+    if not token or not token.startswith('Bearer'):
         return "Unauthorized", 401
 
     token = token[7:]  # Strip off 'Bearer ' to get the actual token
@@ -69,6 +69,34 @@ def authorize():
 @app.route('/')
 def home():
     return render_template('home.html')
+
+@app.route('/book/<book_id>')
+def book_page(book_id):
+    book_ref = db.collection('Book').document(book_id)
+    book = book_ref.get()
+    
+    if book.exists:
+        book_data = book.to_dict()
+        return render_template('book.html', book=book_data)
+    else:
+        return "pula mea 2", 404
+ 
+@app.route('/book/<book_id>/quiz')
+def quiz(book_id):
+    book_ref = db.collection('Book').document(book_id)
+    book = book_ref.get()
+    if book.exists:
+        book_data = book.to_dict()
+        return render_template('quiz.html', book=book_data)
+    else:
+        return "pula mea", 404
+
+@app.route('/mylist')
+def mylist():
+    book_ref = db.collection('Book')
+    book = book_ref.stream()
+    book_list = [{'id': book.id, **book.to_dict()} for book in book]
+    return render_template('mylist.html', books = book_list)
 
 @app.route('/login')
 def login():
