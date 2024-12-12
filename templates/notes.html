@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ro">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" >
+      
+        <title>Flask Template</title>
+      
+      
+        </head>
+<body>
+    {% include 'navbar_public.html' %}
+    <body>
+        <div class="container">
+            <h1>Notițe Carte</h1>
+            <ul>
+                <li>
+                    <strong>Titlul Cărții:</strong> Titlul Cărții 1<br>
+                    <strong>Pagina:</strong> 10<br>
+                    <strong>Notiță:</strong> Aceasta este o notiță importantă de pe pagina 10.
+                </li>
+                <li>
+                    <strong>Titlul Cărții:</strong> Titlul Cărții 1<br>
+                    <strong>Pagina:</strong> 25<br>
+                    <strong>Notiță:</strong> Observație interesantă despre un eveniment important.
+                </li>
+                <li>
+                    <strong>Titlul Cărții:</strong> Titlul Cărții 2<br>
+                    <strong>Pagina:</strong> 45<br>
+                    <strong>Notiță:</strong> Concept dificil explicat aici.
+                </li>
+            </ul>
+        </div>
+    </body>
+    {% include 'footer.html' %}
+</body>
+</html>

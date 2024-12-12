@@ -107,6 +107,10 @@ def logout():
     response.set_cookie('session', '', expires=0)  # Optionally clear the session cookie
     return response
 
+@app.route('/notes')
+def notes():
+    return render_template('notes.html')
+
 
 ##############################################
 """ Private Routes (Require authorization) """
