@@ -1,18 +1,24 @@
 from google.cloud.firestore_v1.base_query import FieldFilter,Or
+from firebase_admin import firestore
 #EXEPLU
 # data = {
 #     "Author": "Ioan Slavici",
 #     "Genre": "Drama",
-#     "Image": "\\rand1",
-#     "Name": "Mara"
 # }
-# qr.insert_document(db,'Book',data)
+# qr.insert_document(db,"User/VsIylI7O9Ew7v9rofgM8/Note","uC54o2LFCuBUDtWs4ewf","Notes",data)
+def insert_into_array(db,collection,id,array_name,data):
+    doc_ref = db.collection(collection).document(id)
+    # doc_ref.set(data)
+
+    doc_ref.update({array_name: firestore.ArrayUnion([data])})
+
 def insert_document(db,collection,data, return_id = False):
     doc_ref = db.collection(collection).document()
     doc_ref.set(data)
 
     if return_id:
         return doc_ref.id
+
 #EXEMPLU qr.update_existing_document(db,'Book',id,"Name","Mara")
 def update_existing_document(db,collection,docID,updated_field,updated_value):
 
