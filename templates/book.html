@@ -8,8 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" >
 
-  <title>{{ book['name'] }}</title>
-  <h1>{{ book['id'] }}</h1>
+  <title>{{book['Name']}}</title>
 
   <style>
     body {
@@ -25,13 +24,15 @@
       background: #fff;
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
       border-radius: 8px;
+      text-align: center; /* Center-aligns content within the main */
     }
     .book-cover {
-      width: 100%;
-      max-height: 400px;
-      object-fit: cover;
+      max-width: 300px;
+      max-height: 300px;
+      /* object-fit: cover; */
       border-radius: 8px;
-      margin-bottom: 20px;
+      margin: 0 auto 20px; /* Centers image horizontally and adds bottom spacing */
+      display: block; /* Ensures block-level behavior for centering */
     }
     .book-title {
       font-weight: 700;
@@ -60,24 +61,28 @@
   {% include 'navbar_public.html' %}
 
   <main>
-    <!-- <img src="{{ book['cover_image'] }}" alt="Book Cover" class="book-cover"> -->
+    <!-- Book Cover Image -->
+    <img src="{{ url_for('static', filename='images/' ~ book['Image']) }}" 
+         class="book-cover" 
+         alt="{{ book['Name'] }}">
+
+    <!-- <h1>{{ bookId }}</h1> -->
     <h1 class="book-title">{{ book['Name'] }}</h1>
     <h2 class="book-author">By {{ book['Author'] }}</h2>
     <p class="book-genre"><strong>Genre:</strong> {{ book['Genre'] }}</p>
-    <!-- <h3>
-        <a href="{{ url_for('quiz', book_id=book['id']) }}">
-          <button id="take_quiz">Take the Quiz</button>
-        </a>
-    </h3> -->
+    <h3>
+      <a href="{{ url_for('quiz', book_id=bookId) }}">
+        <button id="take_quiz">Take the Quiz</button>
+      </a>
       
-
+    
+    </h3>
   </main>
 
-    {% include 'footer.html' %}
+  {% include 'footer.html' %}
 
+  <script src="{{ url_for('static', filename='scripts.js') }}" type="module"></script>
+</body>
 
-
-    <script src="{{ url_for('static', filename='scripts.js') }}" type="module"></script>
-  </body>
 
 </html>

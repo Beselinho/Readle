@@ -75,31 +75,48 @@ def home():
 
 @app.route('/book/<book_id>')
 def book_page(book_id):
-    book_ref = db.collection('Book').document(book_id)
-    book = book_ref.get()
-    
-    if book.exists:
-        book_data = book.to_dict()
-        return render_template('book.html', book=book_data)
+    book_data = qr.get_document(db, 'Book', book_id)
+    if book_data:
+        return render_template('book.html', book=book_data, bookId = book_id)
     else:
-        return "pula mea 2", 404
- 
-@app.route('/book/<book_id>/quiz')
+        return "Error loading Book", 404
+
+
+# @app.route('/book/<book_id>/quiz')
+# def quiz(book_id):
+#     book_ref = qr.get_document(db, 'Book', book_id)
+#     if book_ref:
+#         return render_template('quiz.html', book=book_ref)
+#     else:
+#         return "Error loading Quiz", 404
+
+@app.route('/book/<book_id>/quiz', methods=['GET', 'POST'])
 def quiz(book_id):
-    book_ref = db.collection('Book').document(book_id)
-    book = book_ref.get()
-    if book.exists:
-        book_data = book.to_dict()
-        return render_template('quiz.html', book=book_data)
-    else:
-        return "pula mea", 404
+    book = qr.get_document(db, 'Book', book_id)
+    if not book:
+        return "Error loading Book", 404
+
+    if request.method == 'POST':
+        correct_answers = {
+            'q1': 'Paris',
+            'q2': '4',
+            'q3': 'Mars'
+        }
+        user_answers = request.form.to_dict()
+        score = sum(1 for q, a in correct_answers.items() if user_answers.get(q) == a)
+        return render_template('quiz.html', book=book, score=score, bookkId = book_id)
+
+    return render_template('quiz.html', book=book, bookId = book_id)
+
+
 
 @app.route('/mylist')
 def mylist():
-    book_ref = db.collection('Book')
-    book = book_ref.stream()
-    book_list = [{'id': book.id, **book.to_dict()} for book in book]
-    return render_template('mylist.html', books = book_list)
+    book_list = qr.get_all_docs(db, 'Book')
+    if book_list:
+        return render_template('mylist.html', books = book_list)
+    else:
+        return "Error MyList", 404
 
 @app.route('/login')
 def login():

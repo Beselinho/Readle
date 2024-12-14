@@ -1,42 +1,167 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+<head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" >
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 
-  <title>Quiz {{ book['name'] }}</title>
+  <title>Quiz: {{ book['Name'] }}</title>
 
-<style>
-    a:hover, a:visited, a:link, a:active
-    {
-    text-decoration: none;
+  <style>
+    /* General Styles */
+    body {
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f9f9f9;
     }
-</style>
 
-  </head>
+    /* Navbar Placeholder Styling */
+    nav {
+      background: #007bff;
+      color: white;
+      padding: 15px;
+      text-align: center;
+      font-size: 20px;
+    }
 
-  <body>
+    /* Main Container */
+    main {
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #fff;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+    }
 
-    {% include 'navbar_public.html' %}
-    <main>
-        <section class="questions">
-            <h2>Questions</h2>
-        </section>
+    /* Book Title and Description */
+    .book-title {
+      text-align: center;
+      font-weight: 700;
+      font-size: 28px;
+      margin-bottom: 20px;
+      color: #333;
+    }
 
-        <section class="results">
-            <h2>Results</h2>
-            <p>You got <span id="correct">0</span> out of <span id="total">0</span> correct!</p>
-        </section>
-    </main>
+    h2 {
+      font-size: 22px;
+      color: #444;
+      margin-bottom: 10px;
+    }
 
-    {% include 'footer.html' %}
+    /* Question Section */
+    .questions {
+      margin-bottom: 20px;
+    }
 
-    <script src="script.js"></script>
+    .question {
+      margin-bottom: 20px;
+      padding: 10px 15px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      background: #f7f7f7;
+    }
+
+    .question-title {
+      font-weight: 600;
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+
+    .options label {
+      display: block;
+      margin: 8px 0;
+      font-size: 16px;
+    }
+
+    .verify-btn {
+      margin: 20px 0;
+      padding: 10px 20px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .verify-btn:hover {
+      background-color: #0056b3;
+    }
+
+    /* Results Section */
+    .results {
+      text-align: center;
+      font-size: 18px;
+      padding: 20px;
+      background: #e6f7e6;
+      color: #3a933a;
+      border: 1px solid #3a933a;
+      border-radius: 5px;
+      margin-top: 20px;
+    }
+
+
+  </style>
+</head>
+<body>
+
+  {% include 'navbar_public.html' %}
+  
+  <main>
+    <h1 class="book-title">Quiz for {{ book['Name'] }}</h1>
+
+    <section class="questions">
+      <h2>Questions</h2>
+      <form id="quiz-form" method="POST" action="{{ url_for('quiz', book_id=bookId) }}">
+        <!-- Question 1 -->
+        <div class="question">
+          <div class="question-title">1. What is the capital of France?</div>
+          <div class="options">
+            <label><input type="radio" name="q1" value="Paris"> Paris</label>
+            <label><input type="radio" name="q1" value="London"> London</label>
+            <label><input type="radio" name="q1" value="Berlin"> Berlin</label>
+          </div>
+        </div>
+
+        <!-- Question 2 -->
+        <div class="question">
+          <div class="question-title">2. What is 2 + 2?</div>
+          <div class="options">
+            <label><input type="radio" name="q2" value="3"> 3</label>
+            <label><input type="radio" name="q2" value="4"> 4</label>
+            <label><input type="radio" name="q2" value="5"> 5</label>
+          </div>
+        </div>
+
+        <!-- Question 3 -->
+        <div class="question">
+          <div class="question-title">3. Which planet is known as the Red Planet?</div>
+          <div class="options">
+            <label><input type="radio" name="q3" value="Mars"> Mars</label>
+            <label><input type="radio" name="q3" value="Venus"> Venus</label>
+            <label><input type="radio" name="q3" value="Jupiter"> Jupiter</label>
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" class="verify-btn">Verify</button>
+      </form>
+    </section>
+
+    {% if score is defined %}
+    <section class="results">
+      <h2>Results</h2>
+      <p>You got <span id="correct">{{ score }}</span> out of <span id="total">3</span> correct!</p>
+    </section>
+    {% endif %}
+  </main>
+
+  {% include 'footer.html' %}
+
 </body>
-
 </html>
-
