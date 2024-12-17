@@ -108,45 +108,69 @@
 
   </style>
 </head>
+
 <body>
 
   {% include 'navbar_public.html' %}
   
   <main>
     <h1 class="book-title">Quiz for {{ book['Name'] }}</h1>
+    <!-- <h1 class="book-title">{{ quiz[0]['question1'] }}</h1> -->
 
     <section class="questions">
       <h2>Questions</h2>
       <form id="quiz-form" method="POST" action="{{ url_for('quiz', book_id=bookId) }}">
         <!-- Question 1 -->
         <div class="question">
-          <div class="question-title">1. What is the capital of France?</div>
+          <div class="question-title">1. {{quiz[0]['question1']}}</div>
           <div class="options">
-            <label><input type="radio" name="q1" value="Paris"> Paris</label>
-            <label><input type="radio" name="q1" value="London"> London</label>
-            <label><input type="radio" name="q1" value="Berlin"> Berlin</label>
+            <label><input type="radio" name="q1" value="{{quiz[0]['1answer1']}}"> {{quiz[0]['1answer1'] | replace(" (correct)", "") | replace("(Correct)", "")  }}</label>
+            <label><input type="radio" name="q1" value="{{quiz[0]['1answer2']}}"> {{quiz[0]['1answer2'] | replace(" (correct)", "") | replace("(Correct)", "")}}</label>
+            <label><input type="radio" name="q1" value="{{quiz[0]['1answer3']}}"> {{quiz[0]['1answer3'] | replace(" (correct)", "") | replace("(Correct)", "")}}</label>
           </div>
         </div>
 
         <!-- Question 2 -->
         <div class="question">
-          <div class="question-title">2. What is 2 + 2?</div>
+          <div class="question-title">2.{{quiz[0]['question2']}}</div>
           <div class="options">
-            <label><input type="radio" name="q2" value="3"> 3</label>
-            <label><input type="radio" name="q2" value="4"> 4</label>
-            <label><input type="radio" name="q2" value="5"> 5</label>
+            <label><input type="radio" name="q2" value="{{quiz[0]['2answer1']}}"> {{quiz[0]['2answer1'] | replace(" (correct)", "") | replace("(Correct)", "")}}</label>
+            <label><input type="radio" name="q2" value="{{quiz[0]['2answer2']}}"> {{quiz[0]['2answer2'] | replace(" (correct)", "") | replace("(Correct)", "")}}</label>
+            <label><input type="radio" name="q2" value="{{quiz[0]['2answer3']}}"> {{quiz[0]['2answer3'] | replace(" (correct)", "") | replace("(Correct)", "")}}</label>
           </div>
         </div>
 
         <!-- Question 3 -->
         <div class="question">
-          <div class="question-title">3. Which planet is known as the Red Planet?</div>
+          <div class="question-title">3. {{quiz[0]['question3']}}?</div>
           <div class="options">
-            <label><input type="radio" name="q3" value="Mars"> Mars</label>
-            <label><input type="radio" name="q3" value="Venus"> Venus</label>
-            <label><input type="radio" name="q3" value="Jupiter"> Jupiter</label>
+            <label><input type="radio" name="q3" value="{{quiz[0]['3answer1']}}"> {{quiz[0]['3answer1'] | replace(" (correct)", "") | replace("(Correct)", "")}}</label>
+            <label><input type="radio" name="q3" value="{{quiz[0]['3answer2']}}"> {{quiz[0]['3answer2'] | replace(" (correct)", "") | replace("(Correct)", "")}}</label>
+            <label><input type="radio" name="q3" value="{{quiz[0]['3answer3']}}"> {{quiz[0]['3answer3'] | replace(" (correct)", "") | replace("(Correct)", "")}}</label>
           </div>
         </div>
+
+        <!-- Question 3 -->
+        <div class="question">
+          <div class="question-title">4. {{quiz[0]['question4']}}?</div>
+          <div class="options">
+            <label><input type="radio" name="q4" value="{{quiz[0]['4answer1']}}"> {{quiz[0]['4answer1'] | replace(" (correct)", "") | replace("(Correct)", "")}}</label>
+            <label><input type="radio" name="q4" value="{{quiz[0]['4answer2']}}"> {{quiz[0]['4answer2'] | replace(" (correct)", "") | replace("(Correct)", "")}}</label>
+            <label><input type="radio" name="q4" value="{{quiz[0]['4answer3']}}"> {{quiz[0]['4answer3'] | replace(" (correct)", "") | replace("(Correct)", "")}}</label>
+          </div>
+        </div>
+
+        <!-- Question 3 -->
+        <div class="question">
+          <div class="question-title">5. {{quiz[0]['question5']}}?</div>
+          <div class="options">
+            <label><input type="radio" name="q5" value="{{quiz[0]['5answer1']}}"> {{quiz[0]['5answer1'] | replace(" (correct)", "") | replace("(Correct)", "")}}</label>
+            <label><input type="radio" name="q5" value="{{quiz[0]['5answer2']}}"> {{quiz[0]['5answer2'] | replace(" (correct)", "") | replace("(Correct)", "")}}</label>
+            <label><input type="radio" name="q5" value="{{quiz[0]['5answer3']}}"> {{quiz[0]['5answer3'] | replace(" (correct)", "") | replace("(Correct)", "")}}</label>
+          </div>
+        </div>
+        
+
 
         <!-- Submit Button -->
         <button type="submit" class="verify-btn">Verify</button>
@@ -156,12 +180,13 @@
     {% if score is defined %}
     <section class="results">
       <h2>Results</h2>
-      <p>You got <span id="correct">{{ score }}</span> out of <span id="total">3</span> correct!</p>
+      <p>You got <span id="correct">{{ score }}</span> out of <span id="total">5</span> correct!</p>
+        <p>{{reward_message}}</p>
     </section>
     {% endif %}
   </main>
 
-  {% include 'footer.html' %}
+  <!-- {% include 'footer.html' %} -->
 
 </body>
 </html>

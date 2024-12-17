@@ -71,6 +71,31 @@
       text-decoration: none;
       color: inherit;
     }
+    .delete-favorite {
+    background-color: #ff4d4d;
+    color: white; 
+    border: none;
+    border-radius: 5px; 
+    padding: 1px 5px; 
+    font-size: 0.9rem;
+    cursor: pointer; 
+    transition: all 0.3s ease; 
+    }
+
+    .delete-favorite:hover {
+        background-color: #cc0000; 
+        transform: scale(1.05);
+    }
+
+    .delete-favorite:focus {
+        outline: none;
+        box-shadow: 0 0 5px rgba(255, 77, 77, 0.5); 
+    }
+
+    .btn-sm {
+        font-size: 0.8rem;
+        padding: 4px 8px; 
+    }
   </style>
 </head>
 <body>
@@ -82,14 +107,15 @@
     <ul class="book-list">
         {% for book in books %}
           <li class="book-item">
-            <img src="{{ url_for('static', filename='images/' ~ book['Image']) }}" alt="{{ book['Name'] }}">
+            <img src="{{ url_for('static', filename='images/' ~ book[0]['Image']) }}" alt="{{ book[0]['Name'] }}">
             <div class="book-details">
-              <a href="{{ url_for('book_page', book_id=book['id']) }}">
-                <span class="book-title">{{ book['Name'] }}</span>
+              <a href="{{ url_for('book_page', book_id=book[1]) }}">
+                <span class="book-title">{{ book[0]['Name'] }}</span>
               </a>
-              <span class="book-author">by {{ book['Author'] }}</span>
-              <span class="book-genre">Genre : {{ book['Genre'] }}</span>
+              <span class="book-author">by {{ book[0]['Author'] }}</span>
+              <span class="book-genre">Genre : {{ book[0]['Genre'] }}</span>
             </div>
+            <button class="delete-favorite btn-sm" data-id="{{ book[1] }}">Remove</button>
           </li>
         {% endfor %}
     </ul>
@@ -99,4 +125,33 @@
 
   <script src="{{ url_for('static', filename='scripts.js') }}" type="module"></script>
 </body>
+
+<script>
+  document.querySelectorAll('.delete-favorite').forEach(button => {
+      button.addEventListener('click', async () => {
+          const bookId = button.getAttribute('data-id'); 
+
+          try {
+              const response = await fetch(`/mylist/delete/${bookId}`, {
+                  method: 'DELETE',
+                  headers: {
+                      'Content-Type': 'application/json',
+                  },
+              });
+
+              const result = await response.json();
+              if (result.success) {
+                  alert('Book removed from favorites!');
+                  location.reload();
+              } else {
+                  alert('Error: ' + result.message);
+              }
+          } catch (error) {
+              console.error('Error:', error);
+              alert('An error occurred while removing the book from favorites.');
+          }
+      });
+  });
+</script>
+
 </html>
