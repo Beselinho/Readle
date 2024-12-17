@@ -57,11 +57,11 @@
               color: #777;
               margin: 0;
             }
-            /* Stiluri noi pentru alinierea butoanelor */
+            /* Stiluri pentru alinierea butoanelor */
             .button-container {
-              display: flex; /* Flexbox pentru alinierea butoanelor */
+              display: flex; /* Flexbox pentru a alinia butoanele pe orizontală */
               gap: 10px; /* Spațiu între butoane */
-              margin-top: 10px; /* Spațiere față de textul anterior */
+              margin-top: 10px; /* Spațiere față de elementul anterior */
             }
             .delete-note, .edit-note {
               background-color: #ff4d4d;
@@ -71,7 +71,7 @@
               border-radius: 4px;
               cursor: pointer;
               font-size: 0.8rem;
-              margin: 0; /* Elimină marginile suplimentare */
+              margin: 0; /* Elimină marginile implicite */
             }
             .delete-note:hover {
               background-color: #e60000;
@@ -133,7 +133,7 @@
                       <span class="book-author">Page Number: {{ p_notes['Page_nr'] }}</span>
                       <span class="book-genre">Note: {{ p_notes['Text'] }}</span>
                       
-                      <!-- Container pentru butoane -->
+                      <!-- Container pentru alinierea butoanelor -->
                       <div class="button-container">
                         <button class="delete-note" 
                                 data-id="{{ note['id'] }}" 
@@ -154,7 +154,8 @@
             </ul>
         </div>
     {% include 'footer.html' %}
-
+    
+    <!-- Codul JavaScript rămâne neschimbat -->
     <script>
         // Adaugă eveniment pentru butoanele de ștergere
         document.querySelectorAll('.delete-note').forEach(button => {
@@ -212,6 +213,37 @@
                     alert('Editarea a fost anulată sau nu a fost detectată nicio schimbare.');
                 }
             });
+        });
+
+        document.getElementById('addNoteButton').addEventListener('click', async () => {
+            const bookName = document.getElementById('bookName').value;
+            const pageNumber = document.getElementById('pageNumber').value;
+            const noteText = document.getElementById('noteText').value;
+
+            if (!bookName || !pageNumber || !noteText) {
+                alert('Toate câmpurile sunt obligatorii!');
+                return;
+            }
+
+            const response = await fetch('/notes/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    Book_Name: bookName,
+                    Page_nr: pageNumber,
+                    Text: noteText,
+                }),
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                alert('Notă adăugată!');
+                location.reload();
+            } else {
+                alert('Eroare: ' + result.message);
+            }
         });
     </script>
 </body>
