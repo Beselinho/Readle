@@ -29,7 +29,40 @@ db = firestore.client()
 
 ########################################D
 """ Authentication and Authorization """
+# data = {
+#     "question1": "Who is the main protagonist of 'Baltagul'?",
+#     "1answer1": "Gheorghiță",
+#     "1answer2": "Vitoria Lipan (Correct)",
+#     "1answer3": "Nechifor Lipan",
 
+#     "question2": "What is the driving force behind Vitoria Lipan's journey in 'Baltagul'?",
+#     "2answer1": "To find her missing husband (Correct)",
+#     "2answer2": "To sell cattle at a fair",
+#     "2answer3": "To visit her daughter in another village",
+
+#     "question3": "Who accompanies Vitoria Lipan in her search for her husband?",
+#     "3answer1": "Her daughter Minodora",
+#     "3answer2": "Her son Gheorghiță (Correct)",
+#     "3answer3": "Her brother-in-law Ilie",
+
+#     "question4": "What evidence does Vitoria find that confirms her husband was murdered in 'Baltagul'?",
+#     "4answer1": "A confession letter",
+#     "4answer2": "Witness testimony",
+#     "4answer3": "His hatchet and a bloody stone (Correct)",
+
+#     "question5": "What is the setting of the novel 'Baltagul'?",
+#     "5answer1": "The Moldovan Carpathians (Correct)",
+#     "5answer2": "The Danube Plains",
+#     "5answer3": "The city of Bucharest"
+# }
+# qr.insert_into_array(db,"User/VsIylI7O9Ew7v9rofgM8/Note","g9ZkdSEbdLtB36Rjzdw0","Notes",data)
+# qr.insert_document(db,"User/VsIylI7O9Ew7v9rofgM8/Note","")
+# result = qr.get_documents_with_status(db,"User/VsIylI7O9Ew7v9rofgM8/Note","Book_Name","==","real1")
+# if result == []:
+#     print("nu")
+# print(result)
+# qr.insert_document(db,"Book/DEVkViGknQTB4hqtUxHB/Quiz",data)
+print(qr.get_document(db,'User','VsIylI7O9Ew7v9rofgM8'))
 # Decorator for routes that require authentication
 def auth_required(f):
     @wraps(f)

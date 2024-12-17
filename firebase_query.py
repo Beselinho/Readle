@@ -2,10 +2,13 @@ from google.cloud.firestore_v1.base_query import FieldFilter,Or
 from firebase_admin import firestore
 #EXEPLU
 # data = {
-#     "Author": "Ioan Slavici",
-#     "Genre": "Drama",
+#     "Page_nr": "17",
+#     "Text": "Naspa",
 # }
-# qr.insert_document(db,"User/VsIylI7O9Ew7v9rofgM8/Note","uC54o2LFCuBUDtWs4ewf","Notes",data)
+# qr.insert_into_array(db,"User/VsIylI7O9Ew7v9rofgM8/Note","uC54o2LFCuBUDtWs4ewf","Notes",data)
+
+
+
 def insert_into_array(db,collection,id,array_name,data):
     doc_ref = db.collection(collection).document(id)
     # doc_ref.set(data)
@@ -114,6 +117,14 @@ def get_document(db,collection_name, document_id):
    
 # mara = qr.get_documents_with_status(db,'Book','Name','==','Mara')
 # qr.delete_document(db,"Book",mara[0][1]) mara[0][1] e fix id ul ala pe care il are elementul, cheia primara
+
+def delete_array_element(db,collection_name, document_id,array_name,data_to_delte):
+    doc_ref = db.collection(collection_name).document(document_id)
+
+    doc_ref.update({
+        array_name: firestore.ArrayRemove([data_to_delte])
+    })
+# VsIylI7O9Ew7v9rofgM8 = 20 fara /
 def delete_document(db,collection_name, document_id):
 
     try:
