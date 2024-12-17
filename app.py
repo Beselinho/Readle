@@ -107,9 +107,120 @@ def logout():
     response.set_cookie('session', '', expires=0)  # Optionally clear the session cookie
     return response
 
-@app.route('/notes')
+@app.route('/notes', methods=['GET'])
 def notes():
-    return render_template('notes.html')
+    user = qr.get_documents_with_status(db, 'User', 'Name', '==', 'Bezel')
+    user_id = user[0][1]
+    notes = qr.get_all_docs(db, f'User/{user_id}/Note')
+    return render_template('notes.html', notes=notes)
+
+
+# CRUD Routes for Notes
+@app.route('/notes/add', methods=['POST'])
+def add_note():
+    data = request.json
+    user = qr.get_documents_with_status(db, 'User', 'Name', '==', 'Bezel')
+    user_id = user[0][1]
+    note_ref = f'User/{user_id}/Note'
+
+    new_note = {
+        "Book_Name": data.get('Book_Name'),
+        "Notes": [
+            {
+                "Page_nr": int(data.get('Page_nr')),
+                "Text": data.get('Text')
+            }
+        ]
+    }
+    result = qr.get_documents_with_status(db,"User/VsIylI7O9Ew7v9rofgM8/Note","Book_Name","==",new_note["Book_Name"])
+    # print(result[0][1])
+    if(result == []):
+        qr.insert_document(db, note_ref, new_note)
+    else:
+        qr.insert_into_array(db, note_ref, result[0][1], "Notes", new_note["Notes"][0])
+    return jsonify({"success": True, "message": "Notă adăugată cu succes"}), 201
+
+
+@app.route('/notes/update/<note_id>', methods=['PUT'])
+def update_note(note_id):
+    # Parse JSON request body
+    data = request.json
+
+    # Get the old and new note data
+    old_note = {
+        "Page_nr": int(data.get('old_Page_nr')),
+        "Text": data.get('old_Text')
+    }
+    print(old_note)
+    new_note = {
+        "Page_nr": int(data.get('new_Page_nr')),
+        "Text": data.get('new_Text')
+    }
+    print(new_note)
+    # Fetch the user
+    user = qr.get_documents_with_status(db, 'User', 'Name', '==', 'Bezel')
+    user_id = user[0][1]
+
+    # Define the note reference
+    collection_name = f'User/{user_id}/Note'
+    document_id = note_id
+
+    # Delete the old note
+    qr.delete_array_element(db, collection_name, document_id, "Notes", old_note)
+
+    # Add the new note
+    qr.insert_into_array(db, collection_name, document_id, "Notes", new_note)
+
+    return jsonify({"success": True, "message": "Notă actualizată cu succes"})
+
+
+@app.route('/notes/delete/<note_id>', methods=['DELETE'])
+def delete_note(note_id):
+    # Fetch user data for 'Bezel'
+    user = qr.get_documents_with_status(db, 'User', 'Name', '==', 'Bezel')
+    user_id = user[0][1]
+    collection_name = f'User/{user_id}/Note'
+    document_id = note_id
+
+    # Preluăm datele trimise de la frontend
+    data = request.json
+    print(data)
+    page_nr = data.get('Page_nr')
+    text = data.get('Text')
+
+    # Validare date primite
+    if not page_nr or not text:
+        return jsonify({"success": False, "message": "Date invalide trimise"}), 400
+
+    # Construcția datelor pentru ștergere
+    note_to_remove = {
+        "Page_nr": int(page_nr),  # Convertim la int pentru potrivirea exactă
+        "Text": text
+    }
+
+    # Șterge nota specifică din array-ul Notes
+    try:
+        qr.delete_array_element(db, collection_name, document_id, "Notes", note_to_remove)
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Eroare la ștergerea notei: {str(e)}"}), 500
+
+    result = qr.get_document(db, collection_name, document_id)
+
+    if(result["Notes"] == []):
+        qr.delete_document(db, collection_name, document_id)
+
+    return jsonify({"success": True, "message": "Notă ștearsă cu succes"})
+
+
+@app.route('/notes/view/<note_id>', methods=['GET'])
+def view_note(note_id):
+    user = qr.get_documents_with_status(db, 'User', 'Name', '==', 'Bezel')
+    user_id = user[0][1]
+    note_ref = f'User/{user_id}/Note'
+
+    note = qr.get_document(db, note_ref, note_id)
+    return jsonify(note)
+
 
 
 ##############################################

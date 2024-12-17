@@ -1,4 +1,5 @@
 from google.cloud.firestore_v1.base_query import FieldFilter,Or
+from firebase_admin import firestore
 #EXEPLU
 # data = {
 #     "Author": "Ioan Slavici",
@@ -7,6 +8,19 @@ from google.cloud.firestore_v1.base_query import FieldFilter,Or
 #     "Name": "Mara"
 # }
 # qr.insert_document(db,'Book',data)
+def delete_array_element(db,collection_name, document_id,array_name,data_to_delte):
+    doc_ref = db.collection(collection_name).document(document_id)
+
+    doc_ref.update({
+        array_name: firestore.ArrayRemove([data_to_delte])
+    })
+
+def insert_into_array(db,collection,id,array_name,data):
+    doc_ref = db.collection(collection).document(id)
+    # doc_ref.set(data)
+
+    doc_ref.update({array_name: firestore.ArrayUnion([data])})
+
 def insert_document(db,collection,data, return_id = False):
     doc_ref = db.collection(collection).document()
     doc_ref.set(data)

@@ -10,32 +10,247 @@
       
         <title>Flask Template</title>
       
-      
+        <style>
+            body {
+              font-family: 'Poppins', sans-serif;
+              margin: 0;
+              padding: 0;
+              background-color: #f9f9f9;
+            }
+            main {
+              max-width: 1200px;
+              margin: 50px auto;
+              padding: 20px;
+              background: #fff;
+              box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+              border-radius: 8px;
+            }
+            h1 {
+              text-align: center;
+              font-weight: 600;
+              margin-bottom: 30px;
+            }
+            .book-list {
+              list-style: none;
+              padding: 0;
+              margin: 0;
+            }
+            .book-item {
+              display: flex;
+              flex-direction: column;
+              padding: 15px;
+              border-bottom: 1px solid #ddd;
+            }
+            .book-title {
+              font-weight: 700;
+              font-size: 1.2rem;
+              margin: 0 0 5px;
+            }
+            .book-author {
+              font-weight: 500;
+              font-size: 0.9rem;
+              color: #555;
+              margin: 0;
+            }
+            .book-genre {
+              font-size: 0.9rem;
+              color: #777;
+              margin: 0;
+            }
+            .delete-note, .edit-note {
+              background-color: #ff4d4d;
+              color: white;
+              border: none;
+              padding: 5px 10px;
+              border-radius: 4px;
+              cursor: pointer;
+              font-size: 0.8rem;
+              margin-top: 5px;
+            }
+            .delete-note:hover {
+              background-color: #e60000;
+            }
+            .edit-note {
+              background-color: #4caf50;
+              margin-left: 10px;
+            }
+            .edit-note:hover {
+              background-color: #388e3c;
+            }
+            .add-note-form {
+              margin-top: 20px;
+              padding: 10px;
+              background-color: #f1f1f1;
+              border-radius: 8px;
+              box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+            .add-note-form input, .add-note-form textarea {
+              width: 100%;
+              padding: 8px;
+              margin-bottom: 10px;
+              border: 1px solid #ddd;
+              border-radius: 4px;
+            }
+            .add-note-form button {
+              background-color: #007bff;
+              color: white;
+              border: none;
+              padding: 10px 15px;
+              border-radius: 4px;
+              cursor: pointer;
+            }
+            .add-note-form button:hover {
+              background-color: #0056b3;
+            }
+          </style>
         </head>
 <body>
     {% include 'navbar_public.html' %}
-    <body>
         <div class="container">
             <h1>Notițe Carte</h1>
-            <ul>
-                <li>
-                    <strong>Titlul Cărții:</strong> Titlul Cărții 1<br>
-                    <strong>Pagina:</strong> 10<br>
-                    <strong>Notiță:</strong> Aceasta este o notiță importantă de pe pagina 10.
-                </li>
-                <li>
-                    <strong>Titlul Cărții:</strong> Titlul Cărții 1<br>
-                    <strong>Pagina:</strong> 25<br>
-                    <strong>Notiță:</strong> Observație interesantă despre un eveniment important.
-                </li>
-                <li>
-                    <strong>Titlul Cărții:</strong> Titlul Cărții 2<br>
-                    <strong>Pagina:</strong> 45<br>
-                    <strong>Notiță:</strong> Concept dificil explicat aici.
-                </li>
+
+            <!-- Formular pentru adăugare notă nouă -->
+            <div class="add-note-form">
+                <h2>Adaugă Notă</h2>
+                <input type="text" id="bookName" placeholder="Numele Cărții" required>
+                <input type="number" id="pageNumber" placeholder="Numărul Paginii" required>
+                <textarea id="noteText" placeholder="Textul Notiței" required></textarea>
+                <button id="addNoteButton">Adaugă</button>
+            </div>
+
+            <ul class="book-list">
+                {% for note in notes %}
+                  <li class="book-item">
+                    <a style="text-decoration:none;"><span class="book-title">{{ note['Book_Name'] }}</span></a>
+                    {% for p_notes in note['Notes'] %}
+                      <span class="book-author">Page Number:  {{ p_notes['Page_nr'] }}</span>
+                      <span class="book-genre">Note: {{ p_notes['Text'] }}</span>
+                      <button class="delete-note" 
+                              data-id="{{ note['id'] }}" 
+                              data-page="{{ p_notes['Page_nr'] }}" 
+                              data-text="{{ p_notes['Text'] }}">
+                        Șterge
+                      </button>
+                      <button class="edit-note" 
+                              data-id="{{ note['id'] }}" 
+                              data-page="{{ p_notes['Page_nr'] }}" 
+                              data-text="{{ p_notes['Text'] }}">
+                        Editează
+                      </button>
+                    {% endfor %}
+                  </li>
+                {% endfor %}
             </ul>
         </div>
-    </body>
     {% include 'footer.html' %}
+
+    <script>
+        // Adaugă eveniment pentru butoanele de ștergere
+        document.querySelectorAll('.delete-note').forEach(button => {
+    button.addEventListener('click', async () => {
+        const noteId = button.getAttribute('data-id'); // ID-ul documentului
+        const pageNr = button.getAttribute('data-page'); // Numărul paginii
+        const text = button.getAttribute('data-text'); // Textul notei
+
+        // Trimitere cerere DELETE către server
+        const response = await fetch(`/notes/delete/${noteId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                Page_nr: pageNr,
+                Text: text, // Trimite textul pentru a identifica elementul în vector
+            }),
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            alert('Notă ștearsă!');
+            location.reload(); // Reîncărcare pentru a actualiza lista
+        } else {
+            alert('Eroare: ' + result.message);
+        }
+    });
+});
+
+        // Adaugă eveniment pentru butoanele de editare
+        document.querySelectorAll('.edit-note').forEach(button => {
+    button.addEventListener('click', async () => {
+        const noteId = button.getAttribute('data-id'); // Note ID
+        const oldPageNr = button.getAttribute('data-page'); // Old page number
+        const oldText = button.getAttribute('data-text'); // Old note text
+
+        // Prompt the user to edit the note
+        const newText = prompt('Editați textul notiței:', oldText);
+
+        // If the text is changed, proceed with the update
+        if (newText && newText.trim() !== oldText.trim()) {
+            try {
+                const newPageNr = prompt('Editați numărul paginii:', oldPageNr) || oldPageNr; // Prompt for new page number
+
+                // Send PUT request to update the note
+                const response = await fetch(`/notes/update/${noteId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        old_Page_nr: oldPageNr,
+                        old_Text: oldText,
+                        new_Page_nr: newPageNr,
+                        new_Text: newText
+                    }),
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    alert('Notă actualizată cu succes!');
+                    location.reload(); // Reload the page to reflect changes
+                } else {
+                    alert(`Eroare la actualizare: ${result.message || 'Necunoscută'}`);
+                }
+            } catch (error) {
+                console.error('Eroare la actualizarea notei:', error);
+                alert('A apărut o eroare. Încercați din nou.');
+            }
+        } else {
+            alert('Editarea a fost anulată sau nu a fost detectată nicio schimbare.');
+        }
+    });
+});
+        // Adaugă eveniment pentru adăugarea unei notițe noi
+        document.getElementById('addNoteButton').addEventListener('click', async () => {
+            const bookName = document.getElementById('bookName').value;
+            const pageNumber = document.getElementById('pageNumber').value;
+            const noteText = document.getElementById('noteText').value;
+
+            if (!bookName || !pageNumber || !noteText) {
+                alert('Toate câmpurile sunt obligatorii!');
+                return;
+            }
+
+            const response = await fetch('/notes/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    Book_Name: bookName,
+                    Page_nr: pageNumber,
+                    Text: noteText,
+                }),
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                alert('Notă adăugată!');
+                location.reload();
+            } else {
+                alert('Eroare: ' + result.message);
+            }
+        });
+    </script>
 </body>
 </html>
