@@ -7,6 +7,7 @@ from datetime import timedelta
 import os
 from dotenv import load_dotenv
 import firebase_query as qr
+import openAiPrompt as qz
 load_dotenv()
 
 
@@ -26,6 +27,13 @@ app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # Can be 'Strict', 'Lax', or 'Non
 cred = credentials.Certificate("firebase-auth.json")
 firebase_admin.initialize_app(cred)
 db = firestore.client()
+
+def add_quiz_to_db():
+    quiz = qz.generate_quiz()
+    qr.insert_document(db, "Book/yVnYd1GEh2TlSXlE03Ee/Quiz", quiz)
+    
+add_quiz_to_db()
+    
 
 ########################################D
 """ Authentication and Authorization """
@@ -80,7 +88,7 @@ def auth_required(f):
 @app.route('/auth', methods=['POST'])
 def authorize():
     token = request.headers.get('Authorization')
-    if not token or not token.startswith('Bearer '):
+    if not token or not token.startswith('Bearer'):
         return "Unauthorized", 401
 
     token = token[7:]  # Strip off 'Bearer ' to get the actual token
@@ -105,6 +113,131 @@ def home():
         return render_template('home.html',books=books)
     else:
         return "error home page", 404
+
+@app.route('/book/<book_id>')
+def book_page(book_id):
+    book_data = qr.get_document(db, 'Book', book_id)
+    if book_data:
+        return render_template('book.html', book=book_data, bookId=book_id)
+    else:
+        return "Error loading Book", 404
+
+@app.route('/book/<book_id>/add_favorite', methods=['POST'])
+def add_fav(book_id):
+    print("---------AJUNG AICI-----------------------------------------------")
+    user_id = "VsIylI7O9Ew7v9rofgM8"
+    user_path = f'User/{user_id}'
+    user_doc = qr.get_document(db, 'User', user_id)
+    favourites = user_doc.get('Favourites', [])
+
+    print("---------", favourites)
+    if book_id not in favourites:
+        qr.insert_into_array(db, "User", user_id, 'Favourites', book_id)
+        return jsonify({"success": True, "message": "Book added to favorites!"})
+    return jsonify({"success": False, "message": "Book is already in favorites."})
+
+@app.route('/mylist/delete/<book_id>', methods=['DELETE'])
+def delete_favorite(book_id):
+    user_id = "VsIylI7O9Ew7v9rofgM8"
+    user_path = f'User/{user_id}'
+    
+    try:
+        user = qr.get_document(db, 'User', user_id)
+        favorites = user.get('Favourites', [])
+        
+        if book_id not in favorites:
+            return jsonify({"success": False, "message": "Book not found in favorites."}), 404
+
+        qr.delete_array_element(db, "User", user_id, "Favourites", book_id)
+        return jsonify({"success": True, "message": "Book removed from favorites!"})
+
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Error: {str(e)}"}), 500
+
+
+
+
+@app.route('/book/<book_id>/quiz', methods=['GET', 'POST'])
+def quiz(book_id):
+    book = qr.get_document(db, 'Book', book_id)
+    path = "Book/" + book_id + "/Quiz"
+    quizzes = qr.get_all_docs(db, path)
+
+    if not quizzes:
+        return "Error loading Quiz", 404
+
+    processed_quizzes = []
+    correct_answers = {}
+
+    for quiz in quizzes:
+        for key, value in quiz.items():
+            if key.startswith('question'):
+                question_number = key.replace('question', '')
+                options = []
+
+                for opt_idx in range(1, 4): 
+                    option_key = f'{question_number}answer{opt_idx}'
+                    option = quiz.get(option_key)
+                    if option:
+                        options.append(option)
+                        if "(correct)" in option:
+                            correct_answers[f'q{question_number}'] = option 
+
+                processed_quizzes.append({
+                    'question': value,
+                    'options': options
+                })
+
+    if request.method == 'POST':
+        user_answers = request.form.to_dict()
+        score = sum(
+            1 for q, correct in correct_answers.items() if user_answers.get(q) == correct
+        )
+
+        reward_message = None
+        if score >= 4:
+            user_id = "VsIylI7O9Ew7v9rofgM8"
+            user_path = f'User/{user_id}'
+
+            user_data = qr.get_document(db, 'User', user_id)
+            # print("-----------------------",qr.get_document(db, 'User', user_id)['Made_quizzes'])
+            correct_made_quiz = qr.get_document(db, 'User', user_id)['Made_quizzes'] + 1
+           
+            qr.update_existing_document(db, 'User', user_id, 'Made_quizzes', correct_made_quiz)
+
+            reward_message = f"Congratulations! You scored {score}/5 and earned a reward. Total correct quizzes: {correct_made_quiz}."
+
+        return render_template(
+            'quiz.html',
+            book=book,
+            quiz=quizzes,
+            score=score,
+            reward_message=reward_message,
+            bookId=book_id
+        )
+
+    return render_template(
+        'quiz.html',
+        book=book,
+        quiz=quizzes,
+        bookId=book_id
+    )
+
+
+
+
+@app.route('/mylist')
+def mylist():
+    user_list = qr.get_document(db, 'User', "VsIylI7O9Ew7v9rofgM8")['Favourites']
+    book_list = []
+    for id in user_list:
+        elem = [qr.get_document(db, 'Book', id), id]
+        book_list.append(elem)
+        
+    if book_list:
+        return render_template('mylist.html', books = book_list)
+    else:
+        return "Error MyList", 404
 
 @app.route('/login')
 def login():

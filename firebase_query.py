@@ -211,6 +211,14 @@ def get_different_status(db,collection_name, status_value1, status_value2):
         print(f"Error retrieving documents: {str(e)}")
 
 
+def delete_array_element(db,collection_name, document_id,array_name,data_to_delte):
+    doc_ref = db.collection(collection_name).document(document_id)
+
+    doc_ref.update({
+        array_name: firestore.ArrayRemove([data_to_delte])
+    })
+
+
 # #READ DATA
 
 # get_all_docs("tasksCollection")
