@@ -24,9 +24,12 @@
 }
 
 html, body {
+    height:100%;
     margin: 0;
     padding: 0;
     font-size: 16px;
+    display:flex;
+    flex-direction: column;
 }
 
 body {
@@ -51,6 +54,7 @@ main {
     max-width: var(--maximum-width);
     margin: 0 auto;
     display: flex;
+    flex:1;
     flex-direction: column;
     width: 100%;
 }

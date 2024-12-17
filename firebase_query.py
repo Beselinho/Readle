@@ -1,13 +1,18 @@
 from google.cloud.firestore_v1.base_query import FieldFilter,Or
 from firebase_admin import firestore
+from firebase_admin import firestore
 #EXEPLU
 # data = {
 #     "Page_nr": "17",
 #     "Text": "Naspa",
 # }
-# qr.insert_into_array(db,"User/VsIylI7O9Ew7v9rofgM8/Note","uC54o2LFCuBUDtWs4ewf","Notes",data)
+# qr.insert_document(db,'Book',data)
+def delete_array_element(db,collection_name, document_id,array_name,data_to_delte):
+    doc_ref = db.collection(collection_name).document(document_id)
 
-
+    doc_ref.update({
+        array_name: firestore.ArrayRemove([data_to_delte])
+    })
 
 def insert_into_array(db,collection,id,array_name,data):
     doc_ref = db.collection(collection).document(id)
