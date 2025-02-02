@@ -56,6 +56,44 @@
       line-height: 1.5;
       color: #333;
     }
+    .modal {
+      display: none; /* Hidden by default */
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5); /* Dark overlay */
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* Modal Content */
+    .modal-content {
+      background: lime;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+      width: 300px;
+      box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+      animation: fadeIn 0.3s ease-in-out;
+    }
+
+    .close {
+      position: absolute;
+      right: 15px;
+      top: 10px;
+      font-size: 24px;
+      cursor: pointer;
+    }
+
+    @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+
     
   </style>
 </head>
@@ -81,6 +119,17 @@
     <h3>
       <button id="addFavoriteButton">Add to Favorites</button>
     </h3>
+
+      {% if reward_message %}
+  <div id="failModal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2>Quiz Attempt Result</h2>
+      <p>{{ reward_message }}</p>
+    </div>
+  </div>
+  {% endif %}
+
   </main>
 
   {% include 'footer.html' %}
@@ -117,6 +166,28 @@
           alert('An error occurred while adding the book to favorites.');
       }
   });
+
+  window.onload = function() {
+    var modal = document.getElementById("failModal");
+    var closeBtn = modal ? modal.querySelector(".close") : null;
+    var rewardMessage = "{{ reward_message | default('') }}";
+
+    if (rewardMessage.trim() !== "" && modal) {
+      modal.style.display = "flex"; 
+    }
+
+    if (closeBtn) {
+      closeBtn.onclick = function() {
+        modal.style.display = "none";
+      };
+    }
+
+    window.onclick = function(event) {
+      if (modal && event.target == modal) {
+        modal.style.display = "none";
+      }
+    };
+  };
   </script>
 
 </html>

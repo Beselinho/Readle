@@ -8,6 +8,7 @@ import os
 from dotenv import load_dotenv
 import firebase_query as qr
 import openAiPrompt as qz
+from datetime import datetime, timedelta, timezone
 load_dotenv()
 
 
@@ -117,14 +118,15 @@ def home():
 @app.route('/book/<book_id>')
 def book_page(book_id):
     book_data = qr.get_document(db, 'Book', book_id)
+    reward_message = request.args.get('reward_message', '') 
+
     if book_data:
-        return render_template('book.html', book=book_data, bookId=book_id)
+        return render_template('book.html', book=book_data, bookId=book_id, reward_message=reward_message)
     else:
         return "Error loading Book", 404
 
 @app.route('/book/<book_id>/add_favorite', methods=['POST'])
 def add_fav(book_id):
-    print("---------AJUNG AICI-----------------------------------------------")
     user_id = "VsIylI7O9Ew7v9rofgM8"
     user_path = f'User/{user_id}'
     user_doc = qr.get_document(db, 'User', user_id)
@@ -156,11 +158,25 @@ def delete_favorite(book_id):
 
 
 
-
 @app.route('/book/<book_id>/quiz', methods=['GET', 'POST'])
 def quiz(book_id):
+    user_id = "VsIylI7O9Ew7v9rofgM8"  # You might want to dynamically get the logged-in user
+    user_data = qr.get_document(db, 'User', user_id)
+    
+    if user_data and 'last_failed_attempt' in user_data:
+        last_failed_time = datetime.fromisoformat(user_data['last_failed_attempt'])
+    
+    # Ensure it is timezone-aware
+        if last_failed_time.tzinfo is None:
+            last_failed_time = last_failed_time.replace(tzinfo=timezone.utc)
+
+    datetime_now = datetime.now(timezone.utc)
+
+    if datetime_now - last_failed_time < timedelta(minutes=1):
+        return "You must wait 2 minutes before retrying the quiz.", 403  # Forbidden response
+
     book = qr.get_document(db, 'Book', book_id)
-    path = "Book/" + book_id + "/Quiz"
+    path = f"Book/{book_id}/Quiz"
     quizzes = qr.get_all_docs(db, path)
 
     if not quizzes:
@@ -175,7 +191,7 @@ def quiz(book_id):
                 question_number = key.replace('question', '')
                 options = []
 
-                for opt_idx in range(1, 4): 
+                for opt_idx in range(1, 4):
                     option_key = f'{question_number}answer{opt_idx}'
                     option = quiz.get(option_key)
                     if option:
@@ -194,34 +210,35 @@ def quiz(book_id):
             1 for q, correct in correct_answers.items() if user_answers.get(q) == correct
         )
 
-        reward_message = None
-        if score >= 4:
-            user_id = "VsIylI7O9Ew7v9rofgM8"
-            user_path = f'User/{user_id}'
 
-            user_data = qr.get_document(db, 'User', user_id)
-            # print("-----------------------",qr.get_document(db, 'User', user_id)['Made_quizzes'])
-            correct_made_quiz = qr.get_document(db, 'User', user_id)['Made_quizzes'] + 1
-           
+        if score >= 3 and score < 5:
+            correct_made_quiz = user_data.get('Made_quizzes', 0) + 1
+            qr.update_existing_document(db, 'User', user_id, 'Made_quizzes', correct_made_quiz)
+            
+            failed_timestamp = datetime.utcnow().isoformat()
+            qr.update_existing_document(db, 'User', user_id, 'last_failed_attempt', failed_timestamp)
+
+            reward_message = f"You scored {score}/5 and earned a reward. You can try again for the perfect score tomorrow."
+            return render_template('book.html', book=book, bookId=book_id, reward_message=reward_message)
+        
+        elif score == 5:
+            correct_made_quiz = user_data.get('Made_quizzes', 0) + 1
             qr.update_existing_document(db, 'User', user_id, 'Made_quizzes', correct_made_quiz)
 
-            reward_message = f"Congratulations! You scored {score}/5 and earned a reward. Total correct quizzes: {correct_made_quiz}."
+            reward_message = f"Congratulations! You just got a perfect score and were rewarded the title of 'Pula Mea'."
+            return render_template('quiz.html', book=book, quiz=quizzes, score=score, reward_message=reward_message, bookId=book_id)
 
-        return render_template(
-            'quiz.html',
-            book=book,
-            quiz=quizzes,
-            score=score,
-            reward_message=reward_message,
-            bookId=book_id
-        )
+        
+        elif score < 3:
+            failed_timestamp = datetime.utcnow().isoformat()
+            qr.update_existing_document(db, 'User', user_id, 'last_failed_attempt', failed_timestamp)
 
-    return render_template(
-        'quiz.html',
-        book=book,
-        quiz=quizzes,
-        bookId=book_id
-    )
+            reward_message = f"You only scored {score}/5, not enough to pass the quiz. Try again in 2 minutes!"
+            return render_template('book.html', book=book, bookId=book_id, reward_message=reward_message)
+
+
+    return render_template('quiz.html', book=book, quiz=quizzes, bookId=book_id)
+
 
 
 
@@ -283,9 +300,9 @@ def notes():
     notes = qr.get_all_docs(db, f'User/{user_id}/Note')
     return render_template('notes.html', notes=notes)
 
+#aici
 
 # CRUD Routes for Notes
-@app.route('/notes/add', methods=['POST'])
 def add_note():
     data = request.json
     user = qr.get_documents_with_status(db, 'User', 'Name', '==', 'Bezel')
@@ -389,6 +406,7 @@ def view_note(note_id):
 
     note = qr.get_document(db, note_ref, note_id)
     return jsonify(note)
+#aici
 
 
 
