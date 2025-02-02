@@ -7,8 +7,10 @@
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" >
+        <link rel="icon" href="{{ url_for('static', filename='images/logo.png') }}" type="image/png">
+
       
-        <title>Flask Template</title>
+        <title>Book Notes</title>
       
         <style>
             body {
@@ -23,7 +25,6 @@
               padding: 20px;
               background: #fff;
               box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-              border-radius: 8px;
             }
             h1 {
               text-align: center;
@@ -36,17 +37,19 @@
               margin: 0;
             }
             .book-item {
+              background: #f1f1f1;
+              box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
               display: flex;
               flex-direction: column;
-              padding: 15px;
-              border-bottom: 1px solid #ddd;
+              padding-top: 30px;
+              border-radius : 1px solid #ddd;
             }
             .book-title {
               font-weight: 700;
               font-size: 1.2rem;
               margin: 0 0 5px;
             }
-            .book-author {
+            .book-page {
               font-weight: 500;
               font-size: 0.9rem;
               color: #555;
@@ -82,13 +85,7 @@
             .edit-note:hover {
               background-color: #388e3c;
             }
-            .add-note-form {
-              margin-top: 20px;
-              padding: 10px;
-              background-color: #f1f1f1;
-              border-radius: 8px;
-              box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            }
+
             .add-note-form input, .add-note-form textarea {
               width: 100%;
               padding: 8px;
@@ -107,6 +104,7 @@
             .add-note-form button:hover {
               background-color: #0056b3;
             }
+
           </style>
         </head>
 <body>
@@ -130,7 +128,7 @@
                       <span class="book-title">{{ note['Book_Name'] }}</span>
                     </a>
                     {% for p_notes in note['Notes'] %}
-                      <span class="book-author">Page Number: {{ p_notes['Page_nr'] }}</span>
+                      <span class="book-page">Page Number: {{ p_notes['Page_nr'] }}</span>
                       <span class="book-genre">Note: {{ p_notes['Text'] }}</span>
                       
                       <!-- Container pentru alinierea butoanelor -->
