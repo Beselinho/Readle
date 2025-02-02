@@ -152,11 +152,11 @@ def book_page(book_id):
 
 @app.route('/book/<book_id>/add_favorite', methods=['POST'])
 def add_fav(book_id):
-    user_id = "VsIylI7O9Ew7v9rofgM8"
-    user_path = f'User/{user_id}'
-    user_doc = qr.get_document(db, 'User', user_id)
-    favourites = user_doc.get('Favourites', [])
-
+    if 'user' in session:
+        user_id = "VsIylI7O9Ew7v9rofgM8"
+        user_path = f'User/{user_id}'
+        user_doc = qr.get_document(db, 'User', user_id)
+        favourites = user_doc.get('Favourites', [])
         if book_id not in favourites:
             qr.insert_into_array(db, "User", user_id, 'Favourites', book_id)
             return jsonify({"success": True, "message": "Book added to favorites!"})
@@ -187,25 +187,27 @@ def delete_favorite(book_id):
 
 
 @app.route('/book/<book_id>/quiz', methods=['GET', 'POST'])
+@app.route('/book/<book_id>/quiz', methods=['GET', 'POST'])
 def quiz(book_id):
-    user_id = "VsIylI7O9Ew7v9rofgM8"  # You might want to dynamically get the logged-in user
-    user_data = qr.get_document(db, 'User', user_id)
-    
-    if user_data and 'last_failed_attempt' in user_data:
-        last_failed_time = datetime.fromisoformat(user_data['last_failed_attempt'])
-    
-    # Ensure it is timezone-aware
-        if last_failed_time.tzinfo is None:
-            last_failed_time = last_failed_time.replace(tzinfo=timezone.utc)
+    if 'user' in session:
+        user_id = session['user']['user_id']  # You might want to dynamically get the logged-in user
+        user_data = qr.get_document(db, 'User', user_id)
+        
+        if user_data and 'last_failed_attempt' in user_data:
+            last_failed_time = datetime.fromisoformat(user_data['last_failed_attempt'])
+        
+        # Ensure it is timezone-aware
+            if last_failed_time.tzinfo is None:
+                last_failed_time = last_failed_time.replace(tzinfo=timezone.utc)
 
-    datetime_now = datetime.now(timezone.utc)
+        datetime_now = datetime.now(timezone.utc)
 
-    if datetime_now - last_failed_time < timedelta(minutes=1):
-        return "You must wait 2 minutes before retrying the quiz.", 403  # Forbidden response
+        if datetime_now - last_failed_time < timedelta(minutes=1):
+            return "You must wait 2 minutes before retrying the quiz.", 403  # Forbidden response
 
-    book = qr.get_document(db, 'Book', book_id)
-    path = f"Book/{book_id}/Quiz"
-    quizzes = qr.get_all_docs(db, path)
+        book = qr.get_document(db, 'Book', book_id)
+        path = f"Book/{book_id}/Quiz"
+        quizzes = qr.get_all_docs(db, path)
 
         if not quizzes:
             return "Error loading Quiz", 404
@@ -219,19 +221,19 @@ def quiz(book_id):
                     question_number = key.replace('question', '')
                     options = []
 
-                for opt_idx in range(1, 4):
-                    option_key = f'{question_number}answer{opt_idx}'
-                    option = quiz.get(option_key)
-                    if option:
-                        options.append(option)
-                        if "(correct)" in option:
-                            correct_answers[f'q{question_number}'] = option 
+                    for opt_idx in range(1, 4):
+                        option_key = f'{question_number}answer{opt_idx}'
+                        option = quiz.get(option_key)
+                        if option:
+                            options.append(option)
+                            if "(correct)" in option:
+                                correct_answers[f'q{question_number}'] = option 
 
                     processed_quizzes.append({
                         'question': value,
                         'options': options
                     })
-
+        
         if request.method == 'POST':
             user_answers = request.form.to_dict()
             score = sum(
@@ -239,32 +241,30 @@ def quiz(book_id):
             )
 
 
-        if score >= 3 and score < 5:
-            correct_made_quiz = user_data.get('Made_quizzes', 0) + 1
-            qr.update_existing_document(db, 'User', user_id, 'Made_quizzes', correct_made_quiz)
+            if score >= 3 and score < 5:
+                correct_made_quiz = user_data.get('Made_quizzes', 0) + 1
+                qr.update_existing_document(db, 'User', user_id, 'Made_quizzes', correct_made_quiz)
+                
+                failed_timestamp = datetime.utcnow().isoformat()
+                qr.update_existing_document(db, 'User', user_id, 'last_failed_attempt', failed_timestamp)
+
+                reward_message = f"You scored {score}/5 and earned a reward. You can try again for the perfect score tomorrow."
+                return render_template('book.html', book=book, bookId=book_id, reward_message=reward_message)
             
-            failed_timestamp = datetime.utcnow().isoformat()
-            qr.update_existing_document(db, 'User', user_id, 'last_failed_attempt', failed_timestamp)
+            elif score == 5:
+                correct_made_quiz = user_data.get('Made_quizzes', 0) + 1
+                qr.update_existing_document(db, 'User', user_id, 'Made_quizzes', correct_made_quiz)
 
-            reward_message = f"You scored {score}/5 and earned a reward. You can try again for the perfect score tomorrow."
-            return render_template('book.html', book=book, bookId=book_id, reward_message=reward_message)
-        
-        elif score == 5:
-            correct_made_quiz = user_data.get('Made_quizzes', 0) + 1
-            qr.update_existing_document(db, 'User', user_id, 'Made_quizzes', correct_made_quiz)
+                reward_message = f"Congratulations! You just got a perfect score and were rewarded the title of 'Pula Mea'."
+                return render_template('quiz.html', book=book, quiz=quizzes, score=score, reward_message=reward_message, bookId=book_id)
 
-            reward_message = f"Congratulations! You just got a perfect score and were rewarded the title of 'Pula Mea'."
-            return render_template('quiz.html', book=book, quiz=quizzes, score=score, reward_message=reward_message, bookId=book_id)
+            
+            elif score < 3:
+                failed_timestamp = datetime.utcnow().isoformat()
+                qr.update_existing_document(db, 'User', user_id, 'last_failed_attempt', failed_timestamp)
 
-        
-        elif score < 3:
-            failed_timestamp = datetime.utcnow().isoformat()
-            qr.update_existing_document(db, 'User', user_id, 'last_failed_attempt', failed_timestamp)
-
-            reward_message = f"You only scored {score}/5, not enough to pass the quiz. Try again in 2 minutes!"
-            return render_template('book.html', book=book, bookId=book_id, reward_message=reward_message)
-
-
+                reward_message = f"You only scored {score}/5, not enough to pass the quiz. Try again in 2 minutes!"
+                return render_template('book.html', book=book, bookId=book_id, reward_message=reward_message)
     return render_template('quiz.html', book=book, quiz=quizzes, bookId=book_id)
 
 
