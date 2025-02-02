@@ -1,5 +1,8 @@
 <div class="navbar">
-    <img class="logo-img"  src="{{ url_for('static', filename='images/default_logo.png') }}" />
+    
+    <a href="{{ url_for('home') }}">
+    <img class="logo-img"  src="{{ url_for('static', filename='images/logo.png') }}" />
+    </a>
     <span class="hamburger">&#9776;</span> <!-- Hamburger Icon -->
     <div class="navbar-right" id="navbarRight">
         <span class="closebtn">&times;</span>
