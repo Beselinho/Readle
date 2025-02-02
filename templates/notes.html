@@ -112,15 +112,15 @@
 <body>
     {% include 'navbar_public.html' %}
         <div class="container">
-            <h1>Notițe Carte</h1>
+            <h1>Book Notes</h1>
 
             <!-- Formular pentru adăugare notă nouă -->
             <div class="add-note-form">
-                <h2>Adaugă Notă</h2>
-                <input type="text" id="bookName" placeholder="Numele Cărții" required>
-                <input type="number" id="pageNumber" placeholder="Numărul Paginii" required>
-                <textarea id="noteText" placeholder="Textul Notiței" required></textarea>
-                <button id="addNoteButton">Adaugă</button>
+                <h2>Add Note</h2>
+                <input type="text" id="bookName" placeholder="Book Name" required>
+                <input type="number" id="pageNumber" placeholder="Page number" required>
+                <textarea id="noteText" placeholder="Text" required></textarea>
+                <button id="addNoteButton">Add</button>
             </div>
 
             <ul class="book-list">
@@ -139,13 +139,13 @@
                                 data-id="{{ note['id'] }}" 
                                 data-page="{{ p_notes['Page_nr'] }}" 
                                 data-text="{{ p_notes['Text'] }}">
-                          Șterge
+                          Delete
                         </button>
                         <button class="edit-note" 
                                 data-id="{{ note['id'] }}" 
                                 data-page="{{ p_notes['Page_nr'] }}" 
                                 data-text="{{ p_notes['Text'] }}">
-                          Editează
+                          Edit
                         </button>
                       </div>
                     {% endfor %}

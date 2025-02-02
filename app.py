@@ -28,11 +28,11 @@ cred = credentials.Certificate("firebase-auth.json")
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
-def add_quiz_to_db():
-    quiz = qz.generate_quiz()
-    qr.insert_document(db, "Book/yVnYd1GEh2TlSXlE03Ee/Quiz", quiz)
+# def add_quiz_to_db():
+#     quiz = qz.generate_quiz()
+#     qr.insert_document(db, "Book/yVnYd1GEh2TlSXlE03Ee/Quiz", quiz)
     
-add_quiz_to_db()
+# add_quiz_to_db()
     
 
 ########################################D
