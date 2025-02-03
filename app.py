@@ -153,7 +153,7 @@ def book_page(book_id):
 @app.route('/book/<book_id>/add_favorite', methods=['POST'])
 def add_fav(book_id):
     if 'user' in session:
-        user_id = "VsIylI7O9Ew7v9rofgM8"
+        user_id = session['user']['user_id']
         user_path = f'User/{user_id}'
         user_doc = qr.get_document(db, 'User', user_id)
         favourites = user_doc.get('Favourites', [])
@@ -161,7 +161,8 @@ def add_fav(book_id):
             qr.insert_into_array(db, "User", user_id, 'Favourites', book_id)
             return jsonify({"success": True, "message": "Book added to favorites!"})
         return jsonify({"success": False, "message": "Book is already in favorites."})
-    return render_template('not_logged.html')
+    else:
+        return render_template('not_logged.html')
 
 @app.route('/mylist/delete/<book_id>', methods=['DELETE'])
 def delete_favorite(book_id):
@@ -265,7 +266,7 @@ def quiz(book_id):
 
                 reward_message = f"You only scored {score}/5, not enough to pass the quiz. Try again in 2 minutes!"
                 return render_template('book.html', book=book, bookId=book_id, reward_message=reward_message)
-    return render_template('quiz.html', book=book, quiz=quizzes, bookId=book_id)
+    return render_template('not_logged.html')
 
 
 
