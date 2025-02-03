@@ -71,37 +71,62 @@ db = firestore.client()
 #     print("nu")
 # print(result)
 # qr.insert_document(db,"Book/DEVkViGknQTB4hqtUxHB/Quiz",data)
-print(qr.get_document(db,'User','VsIylI7O9Ew7v9rofgM8'))
+# print(qr.get_document(db,'User','VsIylI7O9Ew7v9rofgM8'))
 # Decorator for routes that require authentication
 def auth_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        # Check if user is authenticated
         if 'user' not in session:
             return redirect(url_for('login'))
-        
-        else:
-            return f(*args, **kwargs)
-        
+        return f(*args, **kwargs)
     return decorated_function
 
 
 @app.route('/auth', methods=['POST'])
 def authorize():
-    token = request.headers.get('Authorization')
-    if not token or not token.startswith('Bearer'):
-        return "Unauthorized", 401
-
-    token = token[7:]  # Strip off 'Bearer ' to get the actual token
-
-    try:
-        decoded_token = auth.verify_id_token(token) # Validate token here
-        session['user'] = decoded_token # Add user to session
-        return redirect(url_for('dashboard'))
+    # Temporary delay to work around the "Token used too early" error.
     
-    except:
-        return "Unauthorized", 401
+    token = request.headers.get('Authorization')
+    if not token or not token.startswith('Bearer '):
+        return jsonify({"error": "Unauthorized"}), 401
 
+    # Remove "Bearer " from token string
+    token = token[7:]
+    data = request.get_json() or {}
+    display_name_from_js = data.get('displayName', '')
+    
+    try:
+        # Verify the token using Firebase Admin SDK
+        decoded_token = auth.verify_id_token(token)
+        uid = decoded_token.get('uid')
+        email = decoded_token.get('email')
+
+        # Reference to the Firestore "User" collection using uid as document ID
+        user_ref = db.collection('User').document(uid)
+        user_doc = user_ref.get()
+
+        if not user_doc.exists:
+            # New user: create a document in Firestore
+            user_data = {
+                "Favourites": [],
+                "Email": email,
+                "Made_quizzes": 0,
+                "Name": display_name_from_js,
+                "last_failed_attempt": "1970-01-01T00:00:00.000000",
+                "CreatedAt": firestore.SERVER_TIMESTAMP
+            }
+            user_ref.set(user_data)
+            print(f"Created new user in Firestore: {uid}")
+        else:
+            print(f"User {uid} already exists in Firestore.")
+
+        session['user'] = decoded_token
+        print("Session user:", session['user'])
+        # Instead of a redirect, return a JSON response.
+        return jsonify({"success": True, "redirect": url_for('home')})
+    except Exception as e:
+        print("Error during token verification:", e)
+        return jsonify({"error": "Unauthorized"}), 401
 
 #####################
 """ Public Routes """
@@ -127,132 +152,139 @@ def book_page(book_id):
 
 @app.route('/book/<book_id>/add_favorite', methods=['POST'])
 def add_fav(book_id):
-    user_id = "VsIylI7O9Ew7v9rofgM8"
-    user_path = f'User/{user_id}'
-    user_doc = qr.get_document(db, 'User', user_id)
-    favourites = user_doc.get('Favourites', [])
-
-    print("---------", favourites)
-    if book_id not in favourites:
-        qr.insert_into_array(db, "User", user_id, 'Favourites', book_id)
-        return jsonify({"success": True, "message": "Book added to favorites!"})
-    return jsonify({"success": False, "message": "Book is already in favorites."})
+    if 'user' in session:
+        user_id = session['user']['user_id']
+        user_path = f'User/{user_id}'
+        user_doc = qr.get_document(db, 'User', user_id)
+        favourites = user_doc.get('Favourites', [])
+        if book_id not in favourites:
+            qr.insert_into_array(db, "User", user_id, 'Favourites', book_id)
+            return jsonify({"success": True, "message": "Book added to favorites!"})
+        return jsonify({"success": False, "message": "Book is already in favorites."})
+    else:
+        return render_template('not_logged.html')
 
 @app.route('/mylist/delete/<book_id>', methods=['DELETE'])
 def delete_favorite(book_id):
-    user_id = "VsIylI7O9Ew7v9rofgM8"
-    user_path = f'User/{user_id}'
-    
-    try:
-        user = qr.get_document(db, 'User', user_id)
-        favorites = user.get('Favourites', [])
+    if 'user' in session:
+        user_id = session['user']['user_id']
+        user_path = f'User/{user_id}'
         
-        if book_id not in favorites:
-            return jsonify({"success": False, "message": "Book not found in favorites."}), 404
+        try:
+            user = qr.get_document(db, 'User', user_id)
+            favorites = user.get('Favourites', [])
+            
+            if book_id not in favorites:
+                return jsonify({"success": False, "message": "Book not found in favorites."}), 404
 
-        qr.delete_array_element(db, "User", user_id, "Favourites", book_id)
-        return jsonify({"success": True, "message": "Book removed from favorites!"})
+            qr.delete_array_element(db, "User", user_id, "Favourites", book_id)
+            return jsonify({"success": True, "message": "Book removed from favorites!"})
 
-    except Exception as e:
-        return jsonify({"success": False, "message": f"Error: {str(e)}"}), 500
+        except Exception as e:
+            return jsonify({"success": False, "message": f"Error: {str(e)}"}), 500
+    else:
+        render_template('not_logged.html')
 
 
 
 @app.route('/book/<book_id>/quiz', methods=['GET', 'POST'])
+@app.route('/book/<book_id>/quiz', methods=['GET', 'POST'])
 def quiz(book_id):
-    user_id = "VsIylI7O9Ew7v9rofgM8"  # You might want to dynamically get the logged-in user
-    user_data = qr.get_document(db, 'User', user_id)
-    
-    if user_data and 'last_failed_attempt' in user_data:
-        last_failed_time = datetime.fromisoformat(user_data['last_failed_attempt'])
-    
-    # Ensure it is timezone-aware
-        if last_failed_time.tzinfo is None:
-            last_failed_time = last_failed_time.replace(tzinfo=timezone.utc)
+    if 'user' in session:
+        user_id = session['user']['user_id']  # You might want to dynamically get the logged-in user
+        user_data = qr.get_document(db, 'User', user_id)
+        
+        if user_data and 'last_failed_attempt' in user_data:
+            last_failed_time = datetime.fromisoformat(user_data['last_failed_attempt'])
+        
+        # Ensure it is timezone-aware
+            if last_failed_time.tzinfo is None:
+                last_failed_time = last_failed_time.replace(tzinfo=timezone.utc)
 
-    datetime_now = datetime.now(timezone.utc)
+        datetime_now = datetime.now(timezone.utc)
 
-    if datetime_now - last_failed_time < timedelta(minutes=1):
-        return "You must wait 2 minutes before retrying the quiz.", 403  # Forbidden response
+        if datetime_now - last_failed_time < timedelta(minutes=1):
+            return "You must wait 2 minutes before retrying the quiz.", 403  # Forbidden response
 
-    book = qr.get_document(db, 'Book', book_id)
-    path = f"Book/{book_id}/Quiz"
-    quizzes = qr.get_all_docs(db, path)
+        book = qr.get_document(db, 'Book', book_id)
+        path = f"Book/{book_id}/Quiz"
+        quizzes = qr.get_all_docs(db, path)
 
-    if not quizzes:
-        return "Error loading Quiz", 404
+        if not quizzes:
+            return "Error loading Quiz", 404
 
-    processed_quizzes = []
-    correct_answers = {}
+        processed_quizzes = []
+        correct_answers = {}
 
-    for quiz in quizzes:
-        for key, value in quiz.items():
-            if key.startswith('question'):
-                question_number = key.replace('question', '')
-                options = []
+        for quiz in quizzes:
+            for key, value in quiz.items():
+                if key.startswith('question'):
+                    question_number = key.replace('question', '')
+                    options = []
 
-                for opt_idx in range(1, 4):
-                    option_key = f'{question_number}answer{opt_idx}'
-                    option = quiz.get(option_key)
-                    if option:
-                        options.append(option)
-                        if "(correct)" in option:
-                            correct_answers[f'q{question_number}'] = option 
+                    for opt_idx in range(1, 4):
+                        option_key = f'{question_number}answer{opt_idx}'
+                        option = quiz.get(option_key)
+                        if option:
+                            options.append(option)
+                            if "(correct)" in option:
+                                correct_answers[f'q{question_number}'] = option 
 
-                processed_quizzes.append({
-                    'question': value,
-                    'options': options
-                })
+                    processed_quizzes.append({
+                        'question': value,
+                        'options': options
+                    })
+        
+        if request.method == 'POST':
+            user_answers = request.form.to_dict()
+            score = sum(
+                1 for q, correct in correct_answers.items() if user_answers.get(q) == correct
+            )
 
-    if request.method == 'POST':
-        user_answers = request.form.to_dict()
-        score = sum(
-            1 for q, correct in correct_answers.items() if user_answers.get(q) == correct
-        )
 
+            if score >= 3 and score < 5:
+                correct_made_quiz = user_data.get('Made_quizzes', 0) + 1
+                qr.update_existing_document(db, 'User', user_id, 'Made_quizzes', correct_made_quiz)
+                
+                failed_timestamp = datetime.utcnow().isoformat()
+                qr.update_existing_document(db, 'User', user_id, 'last_failed_attempt', failed_timestamp)
 
-        if score >= 3 and score < 5:
-            correct_made_quiz = user_data.get('Made_quizzes', 0) + 1
-            qr.update_existing_document(db, 'User', user_id, 'Made_quizzes', correct_made_quiz)
+                reward_message = f"You scored {score}/5 and earned a reward. You can try again for the perfect score tomorrow."
+                return render_template('book.html', book=book, bookId=book_id, reward_message=reward_message)
             
-            failed_timestamp = datetime.utcnow().isoformat()
-            qr.update_existing_document(db, 'User', user_id, 'last_failed_attempt', failed_timestamp)
+            elif score == 5:
+                correct_made_quiz = user_data.get('Made_quizzes', 0) + 1
+                qr.update_existing_document(db, 'User', user_id, 'Made_quizzes', correct_made_quiz)
 
-            reward_message = f"You scored {score}/5 and earned a reward. You can try again for the perfect score tomorrow."
-            return render_template('book.html', book=book, bookId=book_id, reward_message=reward_message)
-        
-        elif score == 5:
-            correct_made_quiz = user_data.get('Made_quizzes', 0) + 1
-            qr.update_existing_document(db, 'User', user_id, 'Made_quizzes', correct_made_quiz)
+                reward_message = f"Congratulations! You just got a perfect score and were rewarded the title of 'Pula Mea'."
+                return render_template('quiz.html', book=book, quiz=quizzes, score=score, reward_message=reward_message, bookId=book_id)
 
-            reward_message = f"Congratulations! You just got a perfect score and were rewarded the title of 'Pula Mea'."
-            return render_template('quiz.html', book=book, quiz=quizzes, score=score, reward_message=reward_message, bookId=book_id)
+            
+            elif score < 3:
+                failed_timestamp = datetime.utcnow().isoformat()
+                qr.update_existing_document(db, 'User', user_id, 'last_failed_attempt', failed_timestamp)
 
-        
-        elif score < 3:
-            failed_timestamp = datetime.utcnow().isoformat()
-            qr.update_existing_document(db, 'User', user_id, 'last_failed_attempt', failed_timestamp)
-
-            reward_message = f"You only scored {score}/5, not enough to pass the quiz. Try again in 2 minutes!"
-            return render_template('book.html', book=book, bookId=book_id, reward_message=reward_message)
-
-
-    return render_template('quiz.html', book=book, quiz=quizzes, bookId=book_id)
+                reward_message = f"You only scored {score}/5, not enough to pass the quiz. Try again in 2 minutes!"
+                return render_template('book.html', book=book, bookId=book_id, reward_message=reward_message)
+    return render_template('not_logged.html')
 
 
 
 @app.route('/mylist')
 def mylist():
-    user_list = qr.get_document(db, 'User', "VsIylI7O9Ew7v9rofgM8")['Favourites']
-    book_list = []
-    for id in user_list:
-        elem = [qr.get_document(db, 'Book', id), id]
-        book_list.append(elem)
-        
-    if book_list:
-        return render_template('mylist.html', books = book_list)
-    else:
-        return "Error MyList", 404
+    if 'user' in session:
+        user_list = qr.get_document(db, 'User', session['user']['user_id'])['Favourites']
+        book_list = []
+        # session['user']
+        for id in user_list:
+            elem = [qr.get_document(db, 'Book', id), id]
+            book_list.append(elem)
+            
+        if book_list:
+            return render_template('mylist.html', books = book_list)
+        else:
+            return render_template('mylist.html', books = [])
+    return render_template('not_logged.html')
 
 @app.route('/login')
 def login():
@@ -270,6 +302,7 @@ def signup():
 
 
 @app.route('/reset-password')
+@auth_required
 def reset_password():
     if 'user' in session:
         return redirect(url_for('dashboard'))
@@ -285,6 +318,7 @@ def privacy():
     return render_template('privacy.html')
 
 @app.route('/logout')
+@auth_required
 def logout():
     session.pop('user', None)  # Remove the user from session
     response = make_response(redirect(url_for('login')))
@@ -302,105 +336,114 @@ def notes():
 
 # CRUD Routes for Notes
 def add_note():
-    data = request.json
-    user = qr.get_documents_with_status(db, 'User', 'Name', '==', 'Bezel')
-    user_id = user[0][1]
-    note_ref = f'User/{user_id}/Note'
+    if 'user' in session:
+        data = request.json
+        user = qr.get_documents_with_status(db, 'User', 'Name', '==', session['user']['name'])
+        user_id = user[0][1]
+        note_ref = f'User/{user_id}/Note'
 
-    new_note = {
-        "Book_Name": data.get('Book_Name'),
-        "Notes": [
-            {
-                "Page_nr": int(data.get('Page_nr')),
-                "Text": data.get('Text')
-            }
-        ]
-    }
-    result = qr.get_documents_with_status(db,"User/VsIylI7O9Ew7v9rofgM8/Note","Book_Name","==",new_note["Book_Name"])
-    # print(result[0][1])
-    if(result == []):
-        qr.insert_document(db, note_ref, new_note)
+        new_note = {
+            "Book_Name": data.get('Book_Name'),
+            "Notes": [
+                {
+                    "Page_nr": int(data.get('Page_nr')),
+                    "Text": data.get('Text')
+                }
+            ]
+        }
+        result = qr.get_documents_with_status(db,"User/" + session['user']['user_id'] + "/Note","Book_Name","==",new_note["Book_Name"])
+        # print(result[0][1])
+        if(result == []):
+            qr.insert_document(db, note_ref, new_note)
+        else:
+            qr.insert_into_array(db, note_ref, result[0][1], "Notes", new_note["Notes"][0])
+        return jsonify({"success": True, "message": "Notă adăugată cu succes"}), 201
     else:
-        qr.insert_into_array(db, note_ref, result[0][1], "Notes", new_note["Notes"][0])
-    return jsonify({"success": True, "message": "Notă adăugată cu succes"}), 201
+        return render_template("not_logged.html")
 
 
 @app.route('/notes/update/<note_id>', methods=['PUT'])
 def update_note(note_id):
-    # Parse JSON request body
-    data = request.json
+    if 'user' in session:
+        # Parse JSON request body
+        data = request.json
 
-    # Get the old and new note data
-    old_note = {
-        "Page_nr": int(data.get('old_Page_nr')),
-        "Text": data.get('old_Text')
-    }
-    print(old_note)
-    new_note = {
-        "Page_nr": int(data.get('new_Page_nr')),
-        "Text": data.get('new_Text')
-    }
-    print(new_note)
-    # Fetch the user
-    user = qr.get_documents_with_status(db, 'User', 'Name', '==', 'Bezel')
-    user_id = user[0][1]
+        # Get the old and new note data
+        old_note = {
+            "Page_nr": int(data.get('old_Page_nr')),
+            "Text": data.get('old_Text')
+        }
+        print(old_note)
+        new_note = {
+            "Page_nr": int(data.get('new_Page_nr')),
+            "Text": data.get('new_Text')
+        }
+        print(new_note)
+        # Fetch the user
+        user = qr.get_documents_with_status(db, 'User', 'Name', '==', session['user']['name'])
+        user_id = user[0][1]
 
-    # Define the note reference
-    collection_name = f'User/{user_id}/Note'
-    document_id = note_id
+        # Define the note reference
+        collection_name = f'User/{user_id}/Note'
+        document_id = note_id
 
-    # Delete the old note
-    qr.delete_array_element(db, collection_name, document_id, "Notes", old_note)
+        # Delete the old note
+        qr.delete_array_element(db, collection_name, document_id, "Notes", old_note)
 
-    # Add the new note
-    qr.insert_into_array(db, collection_name, document_id, "Notes", new_note)
+        # Add the new note
+        qr.insert_into_array(db, collection_name, document_id, "Notes", new_note)
 
-    return jsonify({"success": True, "message": "Notă actualizată cu succes"})
+        return jsonify({"success": True, "message": "Notă actualizată cu succes"})
+    else:
+        return render_template("not_logged.html")
 
 
 @app.route('/notes/delete/<note_id>', methods=['DELETE'])
 def delete_note(note_id):
-    # Fetch user data for 'Bezel'
-    user = qr.get_documents_with_status(db, 'User', 'Name', '==', 'Bezel')
-    user_id = user[0][1]
-    collection_name = f'User/{user_id}/Note'
-    document_id = note_id
+    if 'user' in session:
+        user = qr.get_documents_with_status(db, 'User', 'Name', '==', session['user']['name'])
+        user_id = user[0][1]
+        collection_name = f'User/{user_id}/Note'
+        document_id = note_id
 
-    # Preluăm datele trimise de la frontend
-    data = request.json
-    print(data)
-    page_nr = data.get('Page_nr')
-    text = data.get('Text')
+        # Preluăm datele trimise de la frontend
+        data = request.json
+        print(data)
+        page_nr = data.get('Page_nr')
+        text = data.get('Text')
 
-    # Validare date primite
-    if not page_nr or not text:
-        return jsonify({"success": False, "message": "Date invalide trimise"}), 400
+        # Validare date primite
+        if not page_nr or not text:
+            return jsonify({"success": False, "message": "Date invalide trimise"}), 400
 
-    # Construcția datelor pentru ștergere
-    note_to_remove = {
-        "Page_nr": int(page_nr),  # Convertim la int pentru potrivirea exactă
-        "Text": text
-    }
+        # Construcția datelor pentru ștergere
+        note_to_remove = {
+            "Page_nr": int(page_nr),  # Convertim la int pentru potrivirea exactă
+            "Text": text
+        }
 
-    # Șterge nota specifică din array-ul Notes
-    try:
-        qr.delete_array_element(db, collection_name, document_id, "Notes", note_to_remove)
-    except Exception as e:
-        return jsonify({"success": False, "message": f"Eroare la ștergerea notei: {str(e)}"}), 500
+        # Șterge nota specifică din array-ul Notes
+        try:
+            qr.delete_array_element(db, collection_name, document_id, "Notes", note_to_remove)
+        except Exception as e:
+            return jsonify({"success": False, "message": f"Eroare la ștergerea notei: {str(e)}"}), 500
 
-    result = qr.get_document(db, collection_name, document_id)
+        result = qr.get_document(db, collection_name, document_id)
 
-    if(result["Notes"] == []):
-        qr.delete_document(db, collection_name, document_id)
+        if(result["Notes"] == []):
+            qr.delete_document(db, collection_name, document_id)
 
-    return jsonify({"success": True, "message": "Notă ștearsă cu succes"})
+        return jsonify({"success": True, "message": "Notă ștearsă cu succes"})
+    else:
+        return render_template("not_logged.html")
 
 
 @app.route('/notes/view/<note_id>', methods=['GET'])
 def view_note(note_id):
-    user = qr.get_documents_with_status(db, 'User', 'Name', '==', 'Bezel')
-    user_id = user[0][1]
-    note_ref = f'User/{user_id}/Note'
+    if 'user' in session:
+        user = qr.get_documents_with_status(db, 'User', 'Name', '==', session['user']['name'])
+        user_id = user[0][1]
+        note_ref = f'User/{user_id}/Note'
 
     note = qr.get_document(db, note_ref, note_id)
     return jsonify(note)
