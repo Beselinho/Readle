@@ -241,8 +241,6 @@ def quiz(book_id):
 
 
 
-
-
 @app.route('/mylist')
 def mylist():
     user_list = qr.get_document(db, 'User', "VsIylI7O9Ew7v9rofgM8")['Favourites']
