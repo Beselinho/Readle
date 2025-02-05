@@ -10,12 +10,15 @@
         <!-- Dropdown for News -->
         <a href="{{ url_for('mylist') }}">My List</a>
         <a href="{{ url_for('notes') }}">Notes</a>
+        <a href="{{ url_for('shop') }}">Shop</a>
         {% if 'user' in session%}
         <div class="dropdown">
             <a class="dropbtn" id="dropBtn">Account</a>
             <div class="dropdown-content">
                 <a href="#news1">Profile</a>
                 <a href="{{ url_for('reset_password') }}">Reset Password</a>
+                <a href="{{ url_for('profile') }}">Profile</a>
+                <a href="#news2">Settings</a>
                 <a id="sign-out-btn" href="{{ url_for('logout') }}">Logout</a>
             </div>
         </div>

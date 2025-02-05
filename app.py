@@ -8,10 +8,12 @@ import os
 from dotenv import load_dotenv
 import firebase_query as qr
 import openAiPrompt as qz
+from firebase_admin.firestore import SERVER_TIMESTAMP
 from datetime import datetime, timedelta, timezone
 import re
 from uuid import uuid4
 
+from flask import send_file
 load_dotenv()
 
 
@@ -171,15 +173,15 @@ def home():
     else:
         return "error home page", 404
 
-@app.route('/book/<book_id>')
-def book_page(book_id):
-    book_data = qr.get_document(db, 'Book', book_id)
-    reward_message = request.args.get('reward_message', '') 
+# @app.route('/book/<book_id>')
+# def book_page(book_id):
+#     book_data = qr.get_document(db, 'Book', book_id)
+#     reward_message = request.args.get('reward_message', '') 
 
-    if book_data:
-        return render_template('book.html', book=book_data, bookId=book_id, reward_message=reward_message)
-    else:
-        return "Error loading Book", 404
+#     if book_data:
+#         return render_template('book.html', book=book_data, bookId=book_id, reward_message=reward_message)
+#     else:
+#         return "Error loading Book", 404
 
 @app.route('/book/<book_id>/add_favorite', methods=['POST'])
 def add_fav(book_id):
@@ -194,6 +196,96 @@ def add_fav(book_id):
         return jsonify({"success": False, "message": "Book is already in favorites."})
     else:
         return render_template('not_logged.html')
+
+
+@app.route('/book/<book_id>/submit_review', methods=['POST'])
+def submit_review(book_id):
+    if 'user' not in session:
+        return jsonify({"success": False, "message": "Not authenticated"}), 401
+    
+    try:
+        data = request.get_json()
+        user_id = session['user']['user_id']
+        user_ref = db.collection('User').document(user_id)
+        user = user_ref.get().to_dict()
+
+        review_data = {
+            'user_id': user_id,
+            'user_name': user.get('Name', 'Anonymous'),
+            'rating': data['rating'],
+            'text': data['text'],
+            'timestamp': SERVER_TIMESTAMP
+        }
+
+        # Add review to book's reviews subcollection
+        review_ref = db.collection(f'Book/{book_id}/Reviews').document()
+        review_ref.set(review_data)
+
+        return jsonify({"success": True, "message": "Review submitted successfully"})
+    
+    except Exception as e:
+        print(f"Error submitting review: {str(e)}")
+        return jsonify({"success": False, "message": "Error submitting review"}), 500
+
+# Update the book_page route
+@app.route('/book/<book_id>')
+def book_page(book_id):
+    book_data = qr.get_document(db, 'Book', book_id)
+    reviews_ref = db.collection(f'Book/{book_id}/Reviews').stream()
+    
+    reviews = []
+    for doc in reviews_ref:
+        review_data = doc.to_dict()
+        review_data['id'] = doc.id  # Adaugă ID-ul documentului în datele recenziei
+        reviews.append(review_data)
+    
+    # Calculează rating-ul mediu
+    total_ratings = sum(review.get('rating', 0) for review in reviews)
+    num_reviews = len(reviews)
+    average_rating = total_ratings / num_reviews if num_reviews > 0 else 0
+
+    if book_data:
+        return render_template('book.html', 
+                             book=book_data, 
+                             bookId=book_id, 
+                             reviews=reviews,
+                             average_rating=average_rating,
+                             num_reviews=num_reviews)
+    else:
+        return "Error loading Book", 404   
+@app.route('/book/<book_id>/delete_review/<review_id>', methods=['DELETE'])
+def delete_review(book_id, review_id):
+    if 'user' not in session:
+        return jsonify({"success": False, "message": "Not authenticated"}), 401
+
+    user_id = session['user']['user_id']
+    review_ref = db.collection(f'Book/{book_id}/Reviews').document(review_id)
+    review = review_ref.get()
+
+    if not review.exists:
+        return jsonify({"success": False, "message": "Review not found"}), 404
+
+    if review.to_dict().get('user_id') != user_id:
+        return jsonify({"success": False, "message": "Unauthorized"}), 403
+
+    try:
+        review_ref.delete()
+        return jsonify({"success": True, "message": "Review deleted successfully"})
+    except Exception as e:
+        print(f"Error deleting review: {str(e)}")
+        return jsonify({"success": False, "message": "Error deleting review"}), 500
+
+@app.route('/user/<user_id>')
+def user_profile(user_id):
+    try:
+        user_data = qr.get_document(db, 'User', user_id)
+        if not user_data:
+            abort(404)
+            
+        return render_template('profile.html', user=user_data)
+    except Exception as e:
+        print(f"Error fetching user profile: {str(e)}")
+        abort(404)
 
 @app.route('/mylist/delete/<book_id>', methods=['DELETE'])
 def delete_favorite(book_id):
@@ -218,7 +310,7 @@ def delete_favorite(book_id):
 
 
 
-@app.route('/book/<book_id>/quiz', methods=['GET', 'POST'])
+# @app.route('/book/<book_id>/quiz', methods=['GET', 'POST'])
 @app.route('/book/<book_id>/quiz', methods=['GET', 'POST'])
 def quiz(book_id):
     if 'user' in session:
@@ -335,6 +427,101 @@ def signup():
     else:
         return render_template('signup.html')
 
+@app.route('/profile')
+def profile():
+    if 'user' in session:
+        user_id = session['user']['user_id']
+        user_data = qr.get_document(db, 'User', user_id)
+        return render_template('profile.html', user=user_data)
+    else:
+        return render_template('not_logged.html')
+
+
+
+# Adaugă după ruta /profile
+@app.route('/shop')
+def shop():
+    if 'user' in session:
+        user_id = session['user']['user_id']
+        user_data = qr.get_document(db, 'User', user_id)
+        shop_items = qr.get_all_docs(db, 'Shop')
+        return render_template('shop.html', user=user_data, shop_items=shop_items)
+    return render_template('not_logged.html')
+
+@app.route('/purchase_cover/<cover_id>', methods=['POST'])
+def purchase_cover(cover_id):
+    if 'user' not in session:
+        return jsonify({"success": False, "message": "Not authenticated"}), 401
+    
+    user_id = session['user']['user_id']
+    user_ref = db.collection('User').document(user_id)
+    user_data = user_ref.get().to_dict()
+    cover_data = qr.get_document(db, 'Shop', cover_id)
+
+    if not cover_data:
+        return jsonify({"success": False, "message": "Cover not found"}), 404
+
+    if cover_data['Image_path'] in user_data.get('Covers', []):
+        return jsonify({"success": False, "message": "You already own this cover"}), 400
+
+    if user_data.get('Points', 0) < cover_data['Price']:
+        return jsonify({"success": False, "message": "Insufficient points"}), 400
+
+    try:
+        # Update user points and purchased covers
+        user_ref.update({
+            'Points': firestore.Increment(-cover_data['Price']),
+            'Covers': firestore.ArrayUnion([cover_data['Image_path']])
+        })
+        return jsonify({"success": True, "message": "Cover purchased successfully"})
+    except Exception as e:
+        print(f"Error purchasing cover: {str(e)}")
+        return jsonify({"success": False, "message": "Error purchasing cover"}), 500
+
+@app.route('/equip_cover', methods=['POST'])
+def equip_cover():
+    if 'user' not in session:
+        return jsonify({"success": False, "message": "Not authenticated"}), 401
+    
+    user_id = session['user']['user_id']
+    cover_path = request.json.get('Main_cover')
+    user_ref = db.collection('User').document(user_id)
+    
+    try:
+        user_ref.update({
+            'Main_cover': cover_path
+        })
+        return jsonify({"success": True, "message": "Cover equipped successfully"})
+    except Exception as e:
+        print(f"Error equipping cover: {str(e)}")
+        return jsonify({"success": False, "message": "Error equipping cover"}), 500
+        
+@app.route('/update_main_title', methods=['POST'])
+def update_main_title():
+    if 'user' not in session:
+        return jsonify({"success": False, "message": "Not authenticated"}), 401
+    
+    try:
+        data = request.get_json()
+        new_title = data.get('new_title')
+        user_id = session['user']['user_id']
+        
+        # Update Firestore
+        user_ref = db.collection('User').document(user_id)
+        user_ref.update({
+            'Main_title': new_title
+        })
+        
+        # Update the session if needed
+        if 'user' in session:
+            session['user']['Main_title'] = new_title
+        
+        return jsonify({"success": True, "message": "Title updated successfully"})
+    
+    except Exception as e:
+        print(f"Error updating title: {str(e)}")
+        return jsonify({"success": False, "message": "Error updating title"}), 500
+
 
 @app.route('/reset-password')
 def reset_password():
@@ -365,10 +552,18 @@ def notes():
         return render_template('notes.html', notes=notes)
     else:
         return render_template("not_logged.html")
+    if 'user' in session:
+        user = qr.get_documents_with_status(db, 'User', 'Name', '==', session['user']['name'])
+        user_id = user[0][1]
+        notes = qr.get_all_docs(db, f'User/{user_id}/Note')
+        return render_template('notes.html', notes=notes)
+    else:
+        return render_template("not_logged.html")
 
 #aici
 
 # CRUD Routes for Notes
+@app.route('/notes/add', methods=['POST'])
 def add_note():
     if 'user' in session:
         data = request.json
