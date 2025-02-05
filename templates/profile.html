@@ -119,8 +119,9 @@
   </head>
   <body>
     {% include "navbar_public.html" %}
+    
     <!-- Verificăm dacă profilul afișat este al utilizatorului logat -->
-    {% set is_own_profile = session.get('user') and session['user']['user_id'] == user['user_id'] %}
+    {% set is_own_profile = session['user'] and (session['user']['user_id'] == user_id) %}
     <div class="container">
       <header class="profile-header">
         <h1 class="profile-name">{{ user["Name"] }}</h1>

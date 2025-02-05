@@ -308,43 +308,6 @@
       font-weight: 600;
       transition: background-color 0.3s ease;
     }
-    .modal {
-      display: none; /* Hidden by default */
-      position: fixed;
-      z-index: 1000;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.5); /* Dark overlay */
-      justify-content: center;
-      align-items: center;
-    }
-
-    /* Modal Content */
-    .modal-content {
-      background: #f5d2d2;
-      padding: 20px;
-      border-radius: 10px;
-      text-align: center;
-      width: 300px;
-      box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
-      animation: fadeIn 0.3s ease-in-out;
-    }
-
-    /* Close Button */
-    .close {
-      position: absolute;
-      right: 15px;
-      top: 10px;
-      font-size: 20px;
-      cursor: pointer;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(-20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
 
     .login-button:hover {
       background-color: #2980b9;
@@ -375,7 +338,6 @@
             {{ "%.1f"|format(average_rating) }} ({{ num_reviews }} review{{ 's' if num_reviews != 1 }})
           </p>
         </div>
-
         <div class="buttons-container">
           <h3>
             <a href="{{ url_for('quiz', book_id=bookId) }}">
@@ -418,7 +380,7 @@
                 <a href="{{ url_for('user_profile', user_id=review.user_id) }}" class="review-author">
                   {{ review.user_name }}
                 </a>
-                {% if 'user' in session and review.user_id == session['user']['user_id'] %}
+                {% if 'user' in session and (review.user_id == session['user']['user_id']) or (session['user']['user_id'] == "4D6HOUfVsUhSU1lHpQzbQMhzCgj2") %}
                   <button class="delete-review" onclick="deleteReview('{{ bookId }}', '{{ review.id }}')" title="Delete review"></button>
                 {% endif %}
               </div>
@@ -441,6 +403,34 @@
   <script src="{{ url_for('static', filename='scripts.js') }}" type="module"></script>
 
   <script>
+    document.getElementById('addFavoriteButton').addEventListener('click', async () => {
+      const bookId = "{{ bookId }}"; // Pass bookId dynamically from Flask
+  
+      if (!bookId) {
+          alert('Book ID is missing!');
+          return;
+      }
+  
+      try {
+          const response = await fetch(`/book/${bookId}/add_favorite`, {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+              },
+          });
+  
+          const result = await response.json();
+  
+          if (result.success) {
+              alert('Book added to favorites!');
+          } else {
+              alert('Error: ' + result.message);
+          }
+      } catch (error) {
+          console.error('Error:', error);
+          alert('An error occurred while adding the book to favorites.');
+      }
+  });
     // JS for handling reviews, stars, and submission
     const stars = document.querySelectorAll('.star');
     let currentRating = 0;
@@ -502,7 +492,30 @@
         console.error('Error:', error);
         alert('Failed to submit review');
       }
-  });
+    }
+
+    // Function to delete a review
+    function deleteReview(bookId, reviewId) {
+      if (confirm('Are you sure you want to delete this review?')) {
+        fetch(`/book/${bookId}/delete_review/${reviewId}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+        .then(response => {
+          if (response.ok) {
+            window.location.reload();
+          } else {
+            response.json().then(data => alert(data.message));
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          alert('Error deleting review');
+        });
+      }
+    }
     window.onload = function() {
     const cooldownModal = document.getElementById("cooldownModal");
     const closeBtns = document.querySelectorAll(".close");
@@ -528,31 +541,6 @@
       }
     };
   };
-
-    }
-
-    // Function to delete a review
-    function deleteReview(bookId, reviewId) {
-      if (confirm('Are you sure you want to delete this review?')) {
-        fetch(`/book/${bookId}/delete_review/${reviewId}`, {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        })
-        .then(response => {
-          if (response.ok) {
-            window.location.reload();
-          } else {
-            response.json().then(data => alert(data.message));
-          }
-        })
-        .catch(error => {
-          console.error('Error:', error);
-          alert('Error deleting review');
-        });
-      }
-    }
   </script>
 </body>
 </html>

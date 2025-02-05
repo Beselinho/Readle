@@ -16,7 +16,7 @@
             <a class="dropbtn" id="dropBtn">Account</a>
             <div class="dropdown-content">
                 <a href="{{ url_for('reset_password') }}">Reset Password</a>
-                <a href="{{ url_for('profile') }}">Profile</a>
+                <a href="{{ url_for('user_profile', user_id= session['user']['user_id']) }}">Profile</a>
                 <a id="sign-out-btn" href="{{ url_for('logout') }}">Logout</a>
             </div>
         </div>

@@ -16,342 +16,224 @@
   
   <title>Readle</title>
   
+  <!-- Inline CSS for quick prototyping -->
   <style>
-    /* Ensure html and body take full height and use a flex layout */
-    html, body {
-      height: 100%;
-      margin: 0;
-    }
-    body {
-      display: flex;
-      flex-direction: column;
-      font-family: 'Poppins', sans-serif;
-      background-color: #f9f9f9;
-    }
+    /* Global Styles */
+body {
+  font-family: 'Poppins', sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f9f9f9;
+}
 
-    .container {
-    /* Main content grows with content and clears its children */
-    main {
-      flex: 1;
-      max-width: 1200px;
-      margin: 50px auto;
-      padding: 0 20px;
-    }
+/* Main background rectangle */
+main {
+  max-width: 1200px;
+  margin: 50px auto;
+  padding: 40px 20px 60px;
+  background: #fff;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  height: 80vh;          /* Fixed height */
+  overflow-y: auto;      /* Enable internal scrolling */
+}
 
-    .main-content {
-      background: #fff;
-      padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      border-radius: 8px;
-      overflow: auto; /* Ensures container wraps around its children */
-    }
 
-    h1 {
-      text-align: center;
-      font-weight: 600;
-      margin-bottom: 20px;
-      color: #2d3748;
-    }
+/* Page title */
+h1 {
+  text-align: center;
+  font-weight: 600;
+  margin-bottom: 30px;
+}
 
-    .controls-container {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 30px;
-      gap: 20px;
-    }
+/* Controls (search and filter) container */
+.controls-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
+  margin-bottom: 30px;
+}
 
-    .filter-container {
-      background: #fff;
-      padding: 10px 20px;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
+/* Card Styles */
+.card {
+  margin-bottom: 30px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border: none;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
 
-    .filter-title {
-      font-weight: 600;
-      font-size: 1rem;
-      color: #2d3748;
-      margin: 0;
-    }
+.card:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+}
 
-    .genre-filter {
-      padding: 8px 12px;
-      border-radius: 8px;
-      border: 2px solid #e2e8f0;
-      font-size: 14px;
-      background: #fff;
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
-    }
+.card img {
+  height: 200px;
+  object-fit: cover;
+}
 
-    .genre-filter:focus {
-      border-color: #667eea;
-      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-      outline: none;
-    }
+/* Remove custom row negative margins so Bootstrap can handle it */
+.row {
+  /* Remove or comment out any negative margins */
+  margin: 0 -15px;
+}
 
-    .search-container {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
+/* Form Elements */
+.genre-filter,
+.search-container input[type="search"],
+.search-container button {
+  border-radius: 8px;
+  font-size: 14px;
+}
+.form-control{
+  display: inline;
+}
+/* Genre filter styles */
+.genre-filter {
+  padding: 8px 12px;
+  border: 2px solid #e2e8f0;
+  background: #fff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
 
-    .search-container input[type="search"] {
-      padding: 10px 16px;
-      border: 2px solid #e2e8f0;
-      border-radius: 8px;
-      font-size: 16px;
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
-      width: 300px;
-    }
+.genre-filter:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  outline: none;
+}
 
-    .search-container input[type="search"]:focus {
-      border-color: #667eea;
-      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-      outline: none;
-    }
+/* Search input styles */
+.search-container input[type="search"] {
+  padding: 0 0;
+  border: 2px solid #e2e8f0;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  width: 300px;
+}
 
-    .search-container button {
-      padding: 10px 15px;
-      background: #667eea;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-size: 14px;
-      cursor: pointer;
-      transition: background 0.2s ease;
-    }
+.search-container input[type="search"]:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  outline: none;
+}
 
-    .search-container button:hover {
-      background: #5a6ec2;
-    }
+/* Search button styles */
+.search-container button {
+  padding: 0 0;
+  background: #667eea;
+  color: #fff;
+  border: none;
+  transition: background 0.2s ease;
+  cursor: pointer;
+  bottom: 100px;
+}
 
-    /* Book Cards */
-    /* Card styles */
-    .card {
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      border: none;
-      border-radius: 8px;
-      overflow: hidden;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-      margin-bottom: 20px;
-    }
+.search-container button:hover {
+  background: #5a6ec2;
+}
 
-    .card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-    }
+/* Remove default link underlines */
+a {
+  text-decoration: none;
+}
 
-    .card img {
-      height: 200px;
-      object-fit: cover;
-    }
+#searchInput{
+  bottom: 100px;
+}
 
-    .card-body {
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-
-    .card-title {
-      font-weight: 600;
-      margin-bottom: 10px;
-      color: #2d3748;
-    /* Remove fixed width on row; let Bootstrap’s grid work naturally */
-    .row {
-      margin: 0;
-    }
-
-    .card-text {
-      margin-bottom: 5px;
-      color: #4a5568;
-    }
-
-    .btn-outline-primary {
-      border-color: #667eea;
-      color: #667eea;
-      transition: background 0.2s ease, color 0.2s ease;
-    }
-
-    .btn-outline-primary:hover {
-      background: #667eea;
-      color: white;
-    }
-
-    /* Responsive Design */
-    @media (max-width: 768px) {
-      .controls-container {
-        flex-direction: column;
-        align-items: stretch;
-      }
-
-      .search-container input[type="search"] {
-        width: 100%;
-      }
-
-      .container {
-        margin: 30px 0;
-      }
-
-      .main-content {
-        padding: 20px;
-      }
-    /* Link styling */
-    a:hover, a:visited, a:link, a:active {
-      text-decoration: none;
-    }
-    /* Add Book Button */
-    .add-book-btn {
-      position: relative;
-      width: 150px;
-      background-color: #007bff; /* Primary color */
-      color: white;
-      padding: 15px 25px;
-      border: none;
-      border-radius: 30px;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      cursor: pointer;
-      font-family: 'Poppins', sans-serif;
-      font-weight: 600;
-      font-size: 16px;
-      transition: all 0.3s ease;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .add-book-btn:hover {
-      background-color: #0069d9;
-      transform: translateY(-2px);
-      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
-    }
-    .add-book-btn::before {
-      content: '+';
-      font-size: 24px;
-      line-height: 1;
-    }
   </style>
 </head>
 <body class="bg-light">
   {% include 'navbar_public.html' %}
-
-  <div class="container py-4">
-    <!-- Search and Filter Section -->
-    <div class="main-content">
-      <h1>Home Page</h1>
-
-      <div class="controls-container">
-        <!-- Filter by Genre -->
-        <div class="filter-container">
-          <label for="genreFilter" class="filter-title">Filter by Genre:</label>
-          <select id="genreFilter" class="genre-filter" onchange="filterBooks()">
-            <option value="All">All Genres</option>
-            {% for genre in genres %}
-              <option value="{{ genre }}" {% if selected_genre == genre %}selected{% endif %}>{{ genre }}</option>
-            {% endfor %}
-          </select>
-        </div>
-
-        <!-- Search Bar -->
-        <div class="search-container">
-          <form id="searchForm" onsubmit="return handleSearch()">
-            <label for="searchInput" class="visually-hidden"></label>
-            <input 
-              type="search" 
-              class="form-control" 
-              id="searchInput" 
-              placeholder="Search books or authors..."
-              aria-label="Search"
-              autofocus 
-              value="{{ search_query }}">
-            <button type="submit">Go</button>
-          </form>
-        </div>
-      </div>
-
-      <!-- Books Grid -->
-      <div class="row" id="bookContainer">
-        {% for book in books %}
-          <div class="col-sm-6 col-md-4 col-lg-3">
-            <div class="card h-100">
-              <img src="{{ url_for('static', filename='images/' ~ book['Image']) }}" class="card-img-top" alt="{{ book['Name'] }}">
-              <div class="card-body">
-                <h5 class="card-title">{{ book['Name'] }}</h5>
-                <p class="card-text text-muted">by {{ book['Author'] }}</p>
-                <p class="card-text"><small class="text-muted">Genre: {{ book['Genre'] }}</small></p>
-                <a href="{{ url_for('book_page', book_id=book['id']) }}" class="btn btn-outline-primary">View Details</a>
-              </div>
+  
   <main>
-    <h1>Home Page</h1>
-    
-    <!-- Use a Bootstrap container for responsive layout -->
-    <div class="container">
-      <div class="row">
-        {% for book in books %}
-          <div class="col-sm-6 col-md-4 col-lg-3">
-            <div class="card">
-              <img src="{{ url_for('static', filename='images/' ~ book['Image']) }}" class="card-img-top" alt="{{ book['Name'] }}">
-              <div class="card-body">
-                <h5 class="card-title">{{ book['Name'] }}</h5>
-                <p class="card-text">by {{ book['Author'] }}</p>
-                <p class="card-text"><small class="text-muted">Genre: {{ book['Genre'] }}</small></p>
-                <a href="{{ url_for('book_page', book_id=book['id']) }}" class="btn btn-primary">View Details</a>
-                {% if role == "admin" %}
-                  <form action="{{ url_for('delete_book', book_id=book.id) }}" method="POST" class="mt-2">
-                    <button type="submit" class="btn btn-danger">Delete</button>
-                  </form>
-                {% endif %}
+    <div class="container py-4">
+      <!-- Search and Filter Section -->
+      <div class="main-content">
+        <h1>Home Page</h1>
+        <div class="controls-container">
+          <!-- Filter by Genre -->
+          <div class="filter-container">
+            <label for="genreFilter" class="filter-title">Filter by Genre:</label>
+            <select id="genreFilter" class="genre-filter" onchange="filterBooks()">
+              <option value="All">All Genres</option>
+              {% for genre in genres %}
+                <option value="{{ genre }}" {% if selected_genre == genre %}selected{% endif %}>{{ genre }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Search Bar -->
+          <div class="search-container">
+            <form id="searchForm" onsubmit="return handleSearch()">
+              <label for="searchInput" class="visually-hidden"></label>
+              <input 
+                type="search" 
+                class="form-control" 
+                id="searchInput" 
+                placeholder="Search books or authors..."
+                aria-label="Search"
+                autofocus 
+                value="{{ search_query }}">
+              <button type="submit">Go</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Books Grid Section -->
+        <div class="row">
+          {% for book in books %}
+            <div class="col-sm-6 col-md-4 col-lg-3 d-flex align-items-stretch">
+              <div class="card w-100">
+                <img src="{{ url_for('static', filename='images/' ~ book['Image']) }}" class="card-img-top" alt="{{ book['Name'] }}">
+                <div class="card-body d-flex flex-column">
+                  <h5 class="card-title">{{ book['Name'] }}</h5>
+                  <p class="card-text">by {{ book['Author'] }}</p>
+                  <p class="card-text"><small class="text-muted">Genre: {{ book['Genre'] }}</small></p>
+                  <a href="{{ url_for('book_page', book_id=book['id']) }}" class="btn btn-primary mt-auto">View Details</a>
+                  {% if role == "admin" %}
+                    <form action="{{ url_for('delete_book', book_id=book.id) }}" method="POST" class="mt-2">
+                      <button type="submit" class="btn btn-danger">Delete</button>
+                    </form>
+                  {% endif %}
+                </div>
               </div>
             </div>
-          </div>
-        {% endfor %}
+          {% endfor %}
+        </div>
       </div>
+      
+      {% if role == "admin" %}
+        <div class="text-center mt-4">
+          <form action="{{ url_for('add_book_form') }}">
+            <button class="btn btn-success" type="submit">Add Book</button>
+          </form>
+        </div>
+      {% endif %}
     </div>
-  </div>
 
-  <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
-  <script>
-    function filterBooks() {
-      const searchQuery = document.getElementById('searchInput').value.trim();
-      const selectedGenre = document.getElementById('genreFilter').value;
-
-      const params = new URLSearchParams();
-      if (selectedGenre !== 'All') params.append('genre', selectedGenre);
-      if (searchQuery) params.append('search', searchQuery);
-
-      window.location.href = `/?${params.toString()}`;
-    }
-
-    function handleSearch() {
-      filterBooks();
-      return false; // Prevent form submission
-    }
-  </script>
-        {% endfor %}
-      </div>
-    </div>
-    
-    {% if role == "admin" %}
-      <form action="{{ url_for('add_book_form') }}">
-        <button class="add-book-btn" type="submit">Add book</button>
-      </form>
-    {% endif %}
-    
-    <!-- Bootstrap JS dependencies -->
+    <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <script>
+      function filterBooks() {
+        const searchQuery = document.getElementById('searchInput').value.trim();
+        const selectedGenre = document.getElementById('genreFilter').value;
+        const params = new URLSearchParams();
+        if (selectedGenre !== 'All') params.append('genre', selectedGenre);
+        if (searchQuery) params.append('search', searchQuery);
+        window.location.href = `/?${params.toString()}`;
+      }
+
+      function handleSearch() {
+        filterBooks();
+        return false; // Prevent default form submission
+      }
+    </script>
   </main>
 
   {% include 'footer.html' %}
   <script src="{{ url_for('static', filename='scripts.js') }}" type="module"></script>
 </body>
 </html>
-

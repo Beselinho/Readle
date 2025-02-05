@@ -163,6 +163,11 @@ def authorize():
 
 @app.route('/')
 def home():
+    role = 'user'
+    if 'user' in session:
+        user_id = session['user']['user_id']
+        user_doc = qr.get_document(db, 'User', user_id)
+        role = user_doc.get('Role', [])
     # Get all books first
     all_books = qr.get_all_docs(db, "Book")
     
@@ -177,14 +182,6 @@ def home():
             if (search_query in book.get('Name', '').lower()) or
                (search_query in book.get('Author', '').lower())
         ]
-    books = qr.get_all_docs(db,"Book")
-    role = 'user'
-    if 'user' in session:
-        user_id = session['user']['user_id']
-        user_doc = qr.get_document(db, 'User', user_id)
-        role = user_doc.get('Role', [])
-    if books:
-        return render_template('home.html',books=books,role=role)
     else:
         filtered_books = all_books
     
@@ -200,13 +197,14 @@ def home():
         books=filtered_books,
         genres=all_genres,
         selected_genre=selected_genre or "All",
-        search_query=search_query
+        search_query=search_query,
+        role=role
     )
 
-@app.route('/book/<book_id>')
-def book_page(book_id):
-    book_data = qr.get_document(db, 'Book', book_id)
-    reward_message = request.args.get('reward_message', '') 
+# @app.route('/book/<book_id>')
+# def book_page(book_id):
+#     book_data = qr.get_document(db, 'Book', book_id)
+#     reward_message = request.args.get('reward_message', '') 
 
 #     if book_data:
 #         return render_template('book.html', book=book_data, bookId=book_id, reward_message=reward_message)
@@ -282,7 +280,7 @@ def book_page(book_id):
                              average_rating=average_rating,
                              num_reviews=num_reviews)
     else:
-        return "Error loading Book", 404   
+        return "Error loading Book", 404     
 @app.route('/book/<book_id>/delete_review/<review_id>', methods=['DELETE'])
 def delete_review(book_id, review_id):
     if 'user' not in session:
@@ -295,8 +293,8 @@ def delete_review(book_id, review_id):
     if not review.exists:
         return jsonify({"success": False, "message": "Review not found"}), 404
 
-    if review.to_dict().get('user_id') != user_id:
-        return jsonify({"success": False, "message": "Unauthorized"}), 403
+    # if review.to_dict().get('user_id') != user_id:
+    #     return jsonify({"success": False, "message": "Unauthorized"}), 403
 
     try:
         review_ref.delete()
@@ -307,15 +305,16 @@ def delete_review(book_id, review_id):
 
 @app.route('/user/<user_id>')
 def user_profile(user_id):
+    print(user_id,"0-----")
     try:
         user_data = qr.get_document(db, 'User', user_id)
         if not user_data:
-            return jsonify({"success": False, "message": "Book not found in favorites."}), 404
+            return jsonify({"success": False, "message": "error"}), 404
             
-        return render_template('profile.html', user=user_data)
+        return render_template('profile.html', user=user_data,user_id=user_id)
     except Exception as e:
         print(f"Error fetching user profile: {str(e)}")
-        return jsonify({"success": False, "message": "Book not found in favorites."}), 404
+        return jsonify({"success": False, "message": "error"}), 404
 
 @app.route('/mylist/delete/<book_id>', methods=['DELETE'])
 def delete_favorite(book_id):
@@ -362,7 +361,6 @@ def quiz(book_id):
         'highest_score': 0
     })
 
-    # Cooldown check
     if quiz_entry['last_attempt']:
         last_attempt = datetime.fromisoformat(quiz_entry['last_attempt'])
         if last_attempt.tzinfo is None:
@@ -450,6 +448,7 @@ def quiz(book_id):
                 user_data['Titles'] = []
             if book['Title'] not in user_data['Titles']:
                 user_data['Titles'].append(book['Title'])
+            qr.insert_into_array(db,'User',user_id,'Titles',book['Title'])
 
         # Save updates
         quizzes_taken[book_id] = quiz_entry
@@ -470,6 +469,8 @@ def quiz(book_id):
                 reward_message = f"Score {score}/5. You've {' and '.join(reward_parts)}!"
             else:
                 reward_message = f"Score {score}/5. No new rewards earned."
+
+        qr.insert_into_array(db,'User',user_id,'Titles',book['Title'])
 
         return render_template('quiz.html', 
                             book=book,
