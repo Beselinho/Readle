@@ -10,6 +10,7 @@ import firebase_query as qr
 import openAiPrompt as qz
 from firebase_admin.firestore import SERVER_TIMESTAMP
 from datetime import datetime, timedelta, timezone
+import random
 import re
 from uuid import uuid4
 
@@ -162,6 +163,20 @@ def authorize():
 
 @app.route('/')
 def home():
+    # Get all books first
+    all_books = qr.get_all_docs(db, "Book")
+    
+    # Get parameters
+    search_query = request.args.get('search', '').lower()
+    selected_genre = request.args.get('genre')
+    
+    # Filter by search first
+    if search_query:
+        filtered_books = [
+            book for book in all_books
+            if (search_query in book.get('Name', '').lower()) or
+               (search_query in book.get('Author', '').lower())
+        ]
     books = qr.get_all_docs(db,"Book")
     role = 'user'
     if 'user' in session:
@@ -171,12 +186,27 @@ def home():
     if books:
         return render_template('home.html',books=books,role=role)
     else:
-        return "error home page", 404
+        filtered_books = all_books
+    
+    # Then filter by genre
+    if selected_genre and selected_genre != "All":
+        filtered_books = [book for book in filtered_books if book.get('Genre') == selected_genre]
+    
+    # Get unique genres from ALL books (not filtered ones)
+    all_genres = list(set(book.get('Genre') for book in all_books))
+    
+    return render_template(
+        'home.html',
+        books=filtered_books,
+        genres=all_genres,
+        selected_genre=selected_genre or "All",
+        search_query=search_query
+    )
 
-# @app.route('/book/<book_id>')
-# def book_page(book_id):
-#     book_data = qr.get_document(db, 'Book', book_id)
-#     reward_message = request.args.get('reward_message', '') 
+@app.route('/book/<book_id>')
+def book_page(book_id):
+    book_data = qr.get_document(db, 'Book', book_id)
+    reward_message = request.args.get('reward_message', '') 
 
 #     if book_data:
 #         return render_template('book.html', book=book_data, bookId=book_id, reward_message=reward_message)
@@ -313,88 +343,151 @@ def delete_favorite(book_id):
 # @app.route('/book/<book_id>/quiz', methods=['GET', 'POST'])
 @app.route('/book/<book_id>/quiz', methods=['GET', 'POST'])
 def quiz(book_id):
-    if 'user' in session:
-        user_id = session['user']['user_id']  # You might want to dynamically get the logged-in user
-        user_data = qr.get_document(db, 'User', user_id)
-        
-        if user_data and 'last_failed_attempt' in user_data:
-            last_failed_time = datetime.fromisoformat(user_data['last_failed_attempt'])
-        
-        # Ensure it is timezone-aware
-            if last_failed_time.tzinfo is None:
-                last_failed_time = last_failed_time.replace(tzinfo=timezone.utc)
-
-        datetime_now = datetime.now(timezone.utc)
-
-        if datetime_now - last_failed_time < timedelta(minutes=1):
-            return "You must wait 2 minutes before retrying the quiz.", 403  # Forbidden response
-
-        book = qr.get_document(db, 'Book', book_id)
-        path = f"Book/{book_id}/Quiz"
-        quizzes = qr.get_all_docs(db, path)
-
-        if not quizzes:
-            return "Error loading Quiz", 404
-
-        processed_quizzes = []
-        correct_answers = {}
-
-        for quiz in quizzes:
-            for key, value in quiz.items():
-                if key.startswith('question'):
-                    question_number = key.replace('question', '')
-                    options = []
-
-                    for opt_idx in range(1, 4):
-                        option_key = f'{question_number}answer{opt_idx}'
-                        option = quiz.get(option_key)
-                        if option:
-                            options.append(option)
-                            if "(correct)" in option:
-                                correct_answers[f'q{question_number}'] = option 
-
-                    processed_quizzes.append({
-                        'question': value,
-                        'options': options
-                    })
-        
-        if request.method == 'POST':
-            user_answers = request.form.to_dict()
-            score = sum(
-                1 for q, correct in correct_answers.items() if user_answers.get(q) == correct
-            )
-
-
-            if score >= 3 and score < 5:
-                correct_made_quiz = user_data.get('Made_quizzes', 0) + 1
-                qr.update_existing_document(db, 'User', user_id, 'Made_quizzes', correct_made_quiz)
-                
-                failed_timestamp = datetime.utcnow().isoformat()
-                qr.update_existing_document(db, 'User', user_id, 'last_failed_attempt', failed_timestamp)
-
-                reward_message = f"You scored {score}/5 and earned a reward. You can try again for the perfect score tomorrow."
-                return render_template('book.html', book=book, bookId=book_id, reward_message=reward_message)
-            
-            elif score == 5:
-                correct_made_quiz = user_data.get('Made_quizzes', 0) + 1
-                qr.update_existing_document(db, 'User', user_id, 'Made_quizzes', correct_made_quiz)
-
-                reward_message = f"Congratulations! You just got a perfect score and were rewarded the title of 'Pula Mea'."
-                return render_template('quiz.html', book=book, quiz=quizzes, score=score, reward_message=reward_message, bookId=book_id)
-
-            
-            elif score < 3:
-                failed_timestamp = datetime.utcnow().isoformat()
-                qr.update_existing_document(db, 'User', user_id, 'last_failed_attempt', failed_timestamp)
-
-                reward_message = f"You only scored {score}/5, not enough to pass the quiz. Try again in 2 minutes!"
-                return render_template('book.html', book=book, bookId=book_id, reward_message=reward_message)
-    else:
+    if 'user' not in session:
         return render_template('not_logged.html')
+    
+    user_id = session['user']['user_id']
+    user_data = qr.get_document(db, 'User', user_id)
+    book = qr.get_document(db, 'Book', book_id)
+    
+    if not user_data or not book:
+        return "Error loading data", 404    
+
+    # Initialize quizzes_taken structure
+    quizzes_taken = user_data.get('Quizzes_taken', {})
+    quiz_entry = quizzes_taken.get(book_id, {
+        'points_awarded': 0,
+        'title_awarded': False,
+        'last_attempt': None,
+        'highest_score': 0
+    })
+
+    # Cooldown check
+    if quiz_entry['last_attempt']:
+        last_attempt = datetime.fromisoformat(quiz_entry['last_attempt'])
+        if last_attempt.tzinfo is None:
+            last_attempt = last_attempt.replace(tzinfo=timezone.utc)
+            
+        #cooldown = timedelta(hours=24) if quiz_entry['highest_score'] == 5 else timedelta(minutes=1)
+        cooldown = timedelta(minutes=1)
+        if datetime.now(timezone.utc) - last_attempt < cooldown:
+            remaining_time = cooldown - (datetime.now(timezone.utc) - last_attempt)
+            cooldown_message = f"Cooldown active. Try again in {remaining_time}."
+            
+            return render_template('book.html', 
+                                book=book,
+                                quizzes=[],
+                                bookId=book_id,
+                                cooldown_message=cooldown_message,
+                                show_cooldown=True)
 
 
+    # Load quiz questions
+    quizzes = qr.get_all_docs(db, f"Book/{book_id}/Quiz")
+    if not quizzes:
+        return "Quiz not found", 404
 
-# print(session)
+    # Process questions and answers
+    correct_answers = {}
+    processed_quizzes = []
+    for quiz in quizzes:
+        for key, value in quiz.items():
+            if key.startswith('question'):
+                q_num = key.replace('question', '')
+                options = []
+                correct_answer = None
+                
+                # First collect all options and identify the correct answer
+                for i in range(1, 4):
+                    opt = quiz.get(f'{q_num}answer{i}', '')
+                    options.append(opt)
+                    if "(correct)" in opt:
+                        correct_answer = opt
+                
+                # Shuffle the options
+                random.shuffle(options)
+                
+                # Store the correct answer if found
+                if correct_answer:
+                    correct_answers[f'q{q_num}'] = correct_answer
+                
+                processed_quizzes.append({
+                    'question': value,
+                    'options': options,
+                    'number': q_num
+                })
+
+    if request.method == 'POST':
+        user_answers = request.form.to_dict()
+        score = sum(1 for q, ans in correct_answers.items() if user_answers.get(q) == ans)
+        reward_message = ""
+        points_earned = 0
+        title_earned = False
+
+        # Update quiz entry
+        quiz_entry['last_attempt'] = datetime.now(timezone.utc).isoformat()
+        quiz_entry['highest_score'] = max(score, quiz_entry['highest_score'])
+
+        # Award points if first successful attempt
+        if quiz_entry['points_awarded'] == 0 and score >= 3:
+            if score == 5:
+                points_earned = 200
+                quiz_entry['points_awarded'] = 200
+                quiz_entry['title_awarded'] = True
+                title_earned = True
+            else:
+                points_earned = 100
+                quiz_entry['points_awarded'] = 100
+            
+            user_data['Points'] = user_data.get('Points', 0) + points_earned
+            user_data['Made_quizzes'] = user_data.get('Made_quizzes', 0) + 1
+
+        # Award title if perfect score not already awarded
+        if score == 5 and not quiz_entry['title_awarded']:
+            quiz_entry['title_awarded'] = True
+            title_earned = True
+            if 'Titles' not in user_data:
+                user_data['Titles'] = []
+            if book['Title'] not in user_data['Titles']:
+                user_data['Titles'].append(book['Title'])
+
+        # Save updates
+        quizzes_taken[book_id] = quiz_entry
+        user_data['Quizzes_taken'] = quizzes_taken
+        qr.update_document(db, 'User', user_id, user_data)
+
+        # Build response message
+        if score < 3:
+            reward_message = f"Score {score}/5. Try again in 1 minute."
+        else:
+            reward_parts = []
+            if points_earned:
+                reward_parts.append(f"earned {points_earned} points")
+            if title_earned:
+                reward_parts.append(f"earned the '{book['Title']}' title")
+            
+            if reward_parts:
+                reward_message = f"Score {score}/5. You've {' and '.join(reward_parts)}!"
+            else:
+                reward_message = f"Score {score}/5. No new rewards earned."
+
+        return render_template('quiz.html', 
+                            book=book,
+                            quizzes=processed_quizzes,
+                            bookId=book_id,
+                            score=score,
+                            reward_message=reward_message,
+                            new_title=book['Title'] if title_earned else None,
+                            show_results=True)
+
+    # For GET requests
+    return render_template('quiz.html', 
+                        book=book,
+                        quizzes=processed_quizzes,
+                        bookId=book_id,
+                        show_results=False)
+
+
 
 @app.route('/mylist')
 def mylist():
@@ -546,6 +639,26 @@ def logout():
 @app.route('/notes', methods=['GET'])
 def notes():
     if 'user' in session:
+        user = qr.get_document(db, 'User', session['user']['user_id'])
+        
+        # Get the list of favorite book IDs
+        fav_books_ids = user.get('Favourites', [])  
+
+        book_list = []
+        for book_id in fav_books_ids:
+            book_data = qr.get_document(db, 'Book', book_id)
+            if book_data:
+                book_list.append({"id": book_id, "name": book_data["Name"]})
+
+        # Get all notes for the user
+        notes = qr.get_all_docs(db, f'User/{session["user"]["user_id"]}/Note')
+
+        return render_template('notes.html', notes=notes, books=book_list)
+    else:
+        return render_template("not_logged.html")
+
+
+    if 'user' in session:
         # user = qr.get_documents_with_status(db, 'User', 'Name', '==', session['user']['name'])
         user_id = session['user']['user_id']
         notes = qr.get_all_docs(db, f'User/{user_id}/Note')
@@ -563,6 +676,7 @@ def notes():
 #aici
 
 # CRUD Routes for Notes
+@app.route('/notes/add', methods=['POST'])
 @app.route('/notes/add', methods=['POST'])
 def add_note():
     if 'user' in session:

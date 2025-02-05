@@ -200,8 +200,6 @@
 
 <body>
   {% include 'navbar_public.html' %}
-
-  <!-- Confetti Container (moved outside of main) -->
   <div class="confetti-container" id="confetti-container"></div>
 
   <main>
@@ -210,57 +208,22 @@
     <section class="questions">
       <h2>Questions</h2>
       <form id="quiz-form" method="POST" action="{{ url_for('quiz', book_id=bookId) }}">
-        <!-- Question 1 -->
+        {% for question in quizzes %}
         <div class="question">
-          <div class="question-title">1. {{quiz[0]['question1']}}</div>
+          <div class="question-title">{{ loop.index }}. {{ question.question }}</div>
           <div class="options">
-            <label><input type="radio" name="q1" value="{{quiz[0]['1answer1']}}"> {{quiz[0]['1answer1'] | replace(" (correct)", "") | replace("(Correct)", "")  }}</label>
-            <label><input type="radio" name="q1" value="{{quiz[0]['1answer2']}}"> {{quiz[0]['1answer2'] | replace(" (correct)", "") | replace("(Correct)", "")}}</label>
-            <label><input type="radio" name="q1" value="{{quiz[0]['1answer3']}}"> {{quiz[0]['1answer3'] | replace(" (correct)", "") | replace("(Correct)", "")}}</label>
+            {% for option in question.options %}
+            <label>
+              <input type="radio" 
+                     name="q{{ question.number }}" 
+                     value="{{ option }}"
+                     required>
+              {{ option | replace(" (correct)", "") | replace("(Correct)", "") }}
+            </label>
+            {% endfor %}
           </div>
         </div>
-
-        <!-- Question 2 -->
-        <div class="question">
-          <div class="question-title">2.{{quiz[0]['question2']}}</div>
-          <div class="options">
-            <label><input type="radio" name="q2" value="{{quiz[0]['2answer1']}}"> {{quiz[0]['2answer1'] | replace(" (correct)", "") | replace("(Correct)", "")}}</label>
-            <label><input type="radio" name="q2" value="{{quiz[0]['2answer2']}}"> {{quiz[0]['2answer2'] | replace(" (correct)", "") | replace("(Correct)", "")}}</label>
-            <label><input type="radio" name="q2" value="{{quiz[0]['2answer3']}}"> {{quiz[0]['2answer3'] | replace(" (correct)", "") | replace("(Correct)", "")}}</label>
-          </div>
-        </div>
-
-        <!-- Question 3 -->
-        <div class="question">
-          <div class="question-title">3. {{quiz[0]['question3']}}?</div>
-          <div class="options">
-            <label><input type="radio" name="q3" value="{{quiz[0]['3answer1']}}"> {{quiz[0]['3answer1'] | replace(" (correct)", "") | replace("(Correct)", "")}}</label>
-            <label><input type="radio" name="q3" value="{{quiz[0]['3answer2']}}"> {{quiz[0]['3answer2'] | replace(" (correct)", "") | replace("(Correct)", "")}}</label>
-            <label><input type="radio" name="q3" value="{{quiz[0]['3answer3']}}"> {{quiz[0]['3answer3'] | replace(" (correct)", "") | replace("(Correct)", "")}}</label>
-          </div>
-        </div>
-
-        <!-- Question 4 -->
-        <div class="question">
-          <div class="question-title">4. {{quiz[0]['question4']}}?</div>
-          <div class="options">
-            <label><input type="radio" name="q4" value="{{quiz[0]['4answer1']}}"> {{quiz[0]['4answer1'] | replace(" (correct)", "") | replace("(Correct)", "")}}</label>
-            <label><input type="radio" name="q4" value="{{quiz[0]['4answer2']}}"> {{quiz[0]['4answer2'] | replace(" (correct)", "") | replace("(Correct)", "")}}</label>
-            <label><input type="radio" name="q4" value="{{quiz[0]['4answer3']}}"> {{quiz[0]['4answer3'] | replace(" (correct)", "") | replace("(Correct)", "")}}</label>
-          </div>
-        </div>
-
-        <!-- Question 5 -->
-        <div class="question">
-          <div class="question-title">5. {{quiz[0]['question5']}}?</div>
-          <div class="options">
-            <label><input type="radio" name="q5" value="{{quiz[0]['5answer1']}}"> {{quiz[0]['5answer1'] | replace(" (correct)", "") | replace("(Correct)", "")}}</label>
-            <label><input type="radio" name="q5" value="{{quiz[0]['5answer2']}}"> {{quiz[0]['5answer2'] | replace(" (correct)", "") | replace("(Correct)", "")}}</label>
-            <label><input type="radio" name="q5" value="{{quiz[0]['5answer3']}}"> {{quiz[0]['5answer3'] | replace(" (correct)", "") | replace("(Correct)", "")}}</label>
-          </div>
-        </div>
-
-        <!-- Submit Button -->
+        {% endfor %}
         <button type="submit" class="verify-btn">Verify</button>
       </form>
     </section>
@@ -271,52 +234,58 @@
       <div class="modal-content">
         <span class="close">&times;</span>
         <h2>Results</h2>
-        <!--<p>You got <span id="correct">{{ score }}</span> out of <span id="total">5</span> correct!</p>-->
-        <p>{{ reward_message }}</p>
+        <p id="reward-message">{{ reward_message }}</p>
+        {% if new_title %}
+        <div class="title-unlocked">
+          🏆 New Title Unlocked: <strong>{{ new_title }}</strong>
+        </div>
+        {% endif %}
       </div>
     </div>
     {% endif %}
   </main>
 
   <script>
+    // Ensure bookId is properly set
+    const bookId = "{{ bookId }}";
+    if (!bookId) {
+      console.error("Book ID is missing!");
+    }
+
     window.onload = function() {
-      var modal = document.getElementById("quizResultModal");
-      var closeBtn = modal ? modal.querySelector(".close") : null;
-      var score = parseInt("{{ score | default('0') }}"); // Convert score to integer
+      const modal = document.getElementById("quizResultModal");
+      const closeBtn = modal?.querySelector(".close");
+      const score = parseInt("{{ score | default('0') }}");
+      const rewardMessage = document.getElementById('reward-message')?.textContent;
 
-      if (!isNaN(score) && modal) {
+      if (modal) {
         modal.style.display = "flex";
-
-        // Trigger confetti only if the score is 5
-        if (score === 5) {
-          createConfetti();
-        }
+        
+      // Simplified confetti condition
+      if (score === 5 || rewardMessage?.toLowerCase().includes('5/5s') || rewardMessage?.toLowerCase().includes('rewarded')) {
+        createConfetti();
       }
+    }
 
       if (closeBtn) {
-        closeBtn.onclick = function() {
+        closeBtn.onclick = () => {
           modal.style.display = "none";
-          window.location.href = "/book/{{ bookId }}";
+          window.location.href = "/book/" + bookId;
         };
       }
 
-      window.onclick = function(event) {
-        if (modal && event.target == modal) {
+      window.onclick = (event) => {
+        if (event.target === modal) {
           modal.style.display = "none";
-          window.location.href = "/book/{{ bookId }}";
+          window.location.href = "/book/" + bookId;
         }
       };
     };
 
-
-
-    // Function to generate random colors
     function getRandomColor() {
       const colors = ['#f00', '#0f0', '#00f', '#ff0', '#f0f', '#0ff', '#f90', '#09f'];
       return colors[Math.floor(Math.random() * colors.length)];
     }
-
-    // Function to create confetti
     function createConfetti() {
       const confettiContainer = document.getElementById('confetti-container');
 
