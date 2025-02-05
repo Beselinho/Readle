@@ -15,12 +15,17 @@
             <a class="dropbtn" id="dropBtn">Account</a>
             <div class="dropdown-content">
                 <a href="#news1">Profile</a>
-                <a href="#news2">Settings</a>
+                <a href="{{ url_for('reset_password') }}">Reset Password</a>
                 <a id="sign-out-btn" href="{{ url_for('logout') }}">Logout</a>
             </div>
         </div>
         {%else%}
-        <a href="{{ url_for('login') }}">Login</a>
+        <div class="dropdown">
+            <a href="{{ url_for('login') }}" class="dropbtn" id="dropBtn">Login</a>
+            <div class="dropdown-content">
+                <a href="{{ url_for('reset_password') }}">Reset Password</a>
+            </div>
+        </div> 
         {% endif %}
     </div>
 </div>

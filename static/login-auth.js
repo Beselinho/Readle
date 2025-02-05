@@ -117,38 +117,37 @@ function authSignInWithEmail() {
 }
 
 async function authCreateAccountWithEmail() {
-    const username = usernameInputEl.value.trim();
-    const email = emailInputEl.value;
-    const password = passwordInputEl.value;
-  
-    if (!username) {
-      errorMsgUsername.textContent = "Username is required";
-      return;
-    }
-  
-    try {
-      // 1. Create the Firebase Auth user with email and password.
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-  
-      // 2. Update the user's profile with the provided username.
-      await updateProfile(user, { displayName: username });
-  
-      // 3. Force a token refresh to ensure the updated displayName is included.
-      const idToken = await user.getIdToken(true);
-  
-      // 4. Send the token (and displayName from user) to your backend.
-      //    The loginUser function will handle a 401 error by refreshing the token and retrying.
-      await loginUser(user, idToken);
-  
-      // 5. Clear the authentication input fields.
-      clearAuthFields();
-    } catch (error) {
-      console.error("Error during account creation:", error);
-      // Optionally update the UI to display the error.
-    }
+  const username = usernameInputEl.value.trim();
+  const email = emailInputEl.value;
+  const password = passwordInputEl.value;
+
+  if (!username) {
+    errorMsgUsername.textContent = "Username is required";
+    return;
   }
-  
+
+  try {
+    console.log("Attempting account creation for:", email);
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+
+    // Update the user's profile with the provided username.
+    await updateProfile(user, { displayName: username });
+
+    // Force a token refresh to include the updated displayName.
+    const idToken = await user.getIdToken(true);
+
+    // Send the token (and displayName from user) to your backend.
+    await loginUser(user, idToken);
+
+    // Clear the authentication input fields.
+    clearAuthFields();
+  } catch (error) {
+    console.error("Error during account creation:", error);
+    errorMsgEmail.textContent = error.message;  // Display the error
+  }
+}
+
 
 function resetPassword() {
     const emailToReset = emailForgotPasswordEl.value;

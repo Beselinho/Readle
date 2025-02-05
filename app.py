@@ -1,4 +1,4 @@
-from flask import Flask, redirect, render_template, request, make_response, session, abort, jsonify, url_for
+from flask import Flask, redirect, render_template, request, make_response, session, jsonify, url_for,send_from_directory
 import secrets
 from functools import wraps
 import firebase_admin
@@ -9,12 +9,22 @@ from dotenv import load_dotenv
 import firebase_query as qr
 import openAiPrompt as qz
 from datetime import datetime, timedelta, timezone
+import re
+from uuid import uuid4
+
 load_dotenv()
 
 
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY')
+basedir = os.path.abspath(os.path.dirname(__file__))
+app.config['UPLOAD_FOLDER'] = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'static/images')
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB limit
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+# Configure Flask-Uploads for images
+
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
 # Configure session cookie settings
 app.config['SESSION_COOKIE_SECURE'] = True  # Ensure cookies are sent over HTTPS
@@ -28,6 +38,8 @@ app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # Can be 'Strict', 'Lax', or 'Non
 cred = credentials.Certificate("firebase-auth.json")
 firebase_admin.initialize_app(cred)
 db = firestore.client()
+
+
 
 # def add_quiz_to_db():
 #     quiz = qz.generate_quiz()
@@ -81,7 +93,15 @@ def auth_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-
+def admin(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        user_role= qr.get_document(db, 'User', session['user']['user_id'])["Role"]
+        if  user_role != "admin" :
+            return redirect(url_for('not_logged'))
+        return f(*args, **kwargs)
+    return decorated_function
+# session['user']
 @app.route('/auth', methods=['POST'])
 def authorize():
     # Temporary delay to work around the "Token used too early" error.
@@ -108,11 +128,18 @@ def authorize():
         if not user_doc.exists:
             # New user: create a document in Firestore
             user_data = {
+                "Role":"user",
+                "Titles": ["Reader"],
+                "Main_title": "Reader",
                 "Favourites": [],
                 "Email": email,
                 "Made_quizzes": 0,
                 "Name": display_name_from_js,
                 "last_failed_attempt": "1970-01-01T00:00:00.000000",
+                "Quizzes_taken":{},
+                "Points":0,
+                "Covers":["Default.jpg"],
+                "Main_cover":"Default.jpg",
                 "CreatedAt": firestore.SERVER_TIMESTAMP
             }
             user_ref.set(user_data)
@@ -134,9 +161,13 @@ def authorize():
 @app.route('/')
 def home():
     books = qr.get_all_docs(db,"Book")
-    print(books)
+    role = 'user'
+    if 'user' in session:
+        user_id = session['user']['user_id']
+        user_doc = qr.get_document(db, 'User', user_id)
+        role = user_doc.get('Role', [])
     if books:
-        return render_template('home.html',books=books)
+        return render_template('home.html',books=books,role=role)
     else:
         return "error home page", 404
 
@@ -266,7 +297,8 @@ def quiz(book_id):
 
                 reward_message = f"You only scored {score}/5, not enough to pass the quiz. Try again in 2 minutes!"
                 return render_template('book.html', book=book, bookId=book_id, reward_message=reward_message)
-    return render_template('not_logged.html')
+    else:
+        return render_template('not_logged.html')
 
 
 
@@ -297,6 +329,7 @@ def login():
 
 @app.route('/signup')
 def signup():
+    print("da")
     if 'user' in session:
         return redirect(url_for('dashboard'))
     else:
@@ -304,11 +337,7 @@ def signup():
 
 
 @app.route('/reset-password')
-@auth_required
 def reset_password():
-    if 'user' in session:
-        return redirect(url_for('dashboard'))
-    else:
         return render_template('forgot_password.html')
 
 @app.route('/terms')
@@ -329,10 +358,13 @@ def logout():
 
 @app.route('/notes', methods=['GET'])
 def notes():
-    user = qr.get_documents_with_status(db, 'User', 'Name', '==', 'Bezel')
-    user_id = user[0][1]
-    notes = qr.get_all_docs(db, f'User/{user_id}/Note')
-    return render_template('notes.html', notes=notes)
+    if 'user' in session:
+        # user = qr.get_documents_with_status(db, 'User', 'Name', '==', session['user']['name'])
+        user_id = session['user']['user_id']
+        notes = qr.get_all_docs(db, f'User/{user_id}/Note')
+        return render_template('notes.html', notes=notes)
+    else:
+        return render_template("not_logged.html")
 
 #aici
 
@@ -452,9 +484,91 @@ def view_note(note_id):
 #aici
 
 
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def sanitize_filename(filename):
+    cleaned = re.sub(r'[^a-zA-Z0-9_\-.]', '_', filename)
+    return f"{uuid4().hex[:8]}_{cleaned}"
 
 ##############################################
 """ Private Routes (Require authorization) """
+
+@admin
+@app.route('/book/add', methods=['GET'])
+def add_book_form():
+    return render_template('add_page.html') 
+
+@admin
+@app.route('/add_page', methods=['GET'])
+def add_page(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+@admin
+@app.route('/book/add_book', methods=['POST'])
+def add_book():
+    file = request.files.get('Image')
+    filename = None
+
+    if file and file.filename != '':
+        if not allowed_file(file.filename):
+            return jsonify({"success": False, "message": "Invalid file type"}), 400
+        
+        filename = sanitize_filename(file.filename)
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+
+    new_book = {
+        "Name": request.form.get('Name'),
+        "Author": request.form.get('Author'),
+        "Genre": request.form.get('Genre'),
+        "Title": request.form.get('Title'),
+        "Image": filename
+    }
+
+    # Your database logic here
+    result = qr.get_documents_with_status(db, "Book", "Name", "==", new_book["Name"])
+
+    if not result:
+        qr.insert_document(db, 'Book', new_book)
+    else:
+        book_id = result[0][1]
+        # updates = {k: v for k, v in updates.items() if v is not None}
+        # if updates:
+        if new_book["Author"]:
+            qr.update_existing_document(db, 'Book', book_id, "Author",new_book['Author'])
+        if new_book["Genre"]:
+            qr.update_existing_document(db, 'Book', book_id, "Genre",new_book['Genre'])
+        if new_book["Title"]:
+            qr.update_existing_document(db, 'Book', book_id, "Title",new_book['Title'])
+        if new_book["Image"]:
+            qr.update_existing_document(db, 'Book', book_id, "Image",new_book['Image'])
+
+    # Redirect to the home page after adding the book
+    return redirect(url_for('home'))  # Replace 'home' with the name of your home route
+
+@admin
+@app.route('/book/delete/<book_id>', methods=['POST'])
+def delete_book(book_id):
+    # Get the book document from database
+    book_doc = qr.get_document(db, 'Book', book_id)
+    
+    if not book_doc:
+        return jsonify({"success": False, "message": "Invalid file type"}), 400
+
+    # Delete associated image file if it exists
+    if book_doc.get('Image'):
+        try:
+            image_path = os.path.join(app.config['UPLOAD_FOLDER'], book_doc['Image'])
+            if os.path.exists(image_path):
+                os.remove(image_path)
+        except Exception as e:
+            app.logger.error(f"Error deleting image file: {str(e)}")
+
+    # Delete the book document from database
+    qr.delete_document(db, 'Book', book_id)
+
+    return redirect(url_for('home'))
 
 @app.route('/dashboard')
 @auth_required
