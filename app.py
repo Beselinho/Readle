@@ -280,12 +280,12 @@ def user_profile(user_id):
     try:
         user_data = qr.get_document(db, 'User', user_id)
         if not user_data:
-            abort(404)
+            return jsonify({"success": False, "message": "Book not found in favorites."}), 404
             
         return render_template('profile.html', user=user_data)
     except Exception as e:
         print(f"Error fetching user profile: {str(e)}")
-        abort(404)
+        return jsonify({"success": False, "message": "Book not found in favorites."}), 404
 
 @app.route('/mylist/delete/<book_id>', methods=['DELETE'])
 def delete_favorite(book_id):

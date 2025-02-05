@@ -74,7 +74,7 @@ main {
 }
 
 .logo-img {
-    width: 160px;
+    width: 70px;
     margin-left: 1rem;
 }
 
@@ -341,8 +341,8 @@ footer {
     color: white; /* Dark grey text */
     font-family: var(--primary-font);
     text-align: center; /* Centering the content */
-    padding: 10px 0; /* Padding above and below */
-    font-size: 14px; /* Standard font size */
+    padding: 0px 0; /* Padding above and below */
+    font-size: 12px; /* Standard font size */
 }
 
 .simple-footer {
