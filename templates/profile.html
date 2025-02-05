@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='images/logo.png') }}" type="image/png">
+    <style>
+      * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+          font-family: 'Poppins', sans-serif;
+      }
+
+      body {
+          background-color: #f5f5f5;
+          line-height: 1.6;
+      }
+
+      .container {
+          max-width: 1200px;
+          margin: 2rem auto;
+          padding: 0 20px;
+      }
+
+      .profile-header {
+          background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)),
+                      url('/static/images/covers/{{ user.Main_cover if user.Main_cover else "default.jpg" }}') center/cover;
+          color: white;
+          text-align: center;
+          padding: 4rem 2rem;
+          border-radius: 15px;
+          margin-bottom: 2rem;
+          transition: background 0.5s ease-in-out;
+      }
+
+      .profile-name {
+          font-size: 2.5rem;
+          margin-bottom: 0.5rem;
+      }
+
+      .profile-title {
+          font-size: 1.2rem;
+          color: #ddd;
+      }
+
+      .profile-content {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 2rem;
+      }
+
+      .card {
+          background: white;
+          padding: 2rem;
+          border-radius: 10px;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .covers-grid {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 1rem;
+          justify-content: center;
+      }
+
+      .cover-image {
+          width: 100px;
+          height: 150px;
+          object-fit: cover;
+          border-radius: 5px;
+          cursor: pointer;
+          transition: transform 0.3s ease;
+          border: 2px solid transparent;
+      }
+
+      .cover-image:hover {
+          transform: scale(1.05);
+      }
+
+      .skill-tag {
+          display: inline-block;
+          background: #3498db;
+          color: white;
+          padding: 8px 12px;
+          border-radius: 20px;
+          cursor: pointer;
+          transition: background 0.3s, transform 0.2s;
+          text-align: center;
+          font-weight: 600;
+      }
+
+      .skill-tag:hover {
+          background: #2980b9;
+          transform: scale(1.1);
+      }
+
+      /* Stil pentru elementele dezactivate */
+      .disabled {
+          pointer-events: none;
+          opacity: 0.6;
+      }
+
+      @media (max-width: 768px) {
+          .profile-content {
+              grid-template-columns: 1fr;
+          }
+          
+          .profile-name {
+              font-size: 2rem;
+          }
+      }
+    </style>
+    <title>Profilul utilizatorului</title>
+  </head>
+  <body>
+    {% include "navbar_public.html" %}
+    <!-- Verificăm dacă profilul afișat este al utilizatorului logat -->
+    {% set is_own_profile = session.get('user') and session['user']['user_id'] == user['user_id'] %}
+    <div class="container">
+      <header class="profile-header">
+        <h1 class="profile-name">{{ user["Name"] }}</h1>
+        <p class="profile-title">{{ user["Main_title"] }}</p>
+      </header>
+
+      <div class="profile-content">
+        <div class="card covers-section">
+          <h2>Your Covers</h2>
+          <div class="covers-grid">
+            {% for cover in user.Covers %}
+              <div class="cover-item">
+                {% if is_own_profile %}
+                  <img src="{{ url_for('static', filename='images/covers/' + cover) }}" 
+                       class="cover-image"
+                       onclick="equipCover('{{ cover }}')">
+                {% else %}
+                  <img src="{{ url_for('static', filename='images/covers/' + cover) }}" 
+                       class="cover-image disabled">
+                {% endif %}
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="card title_list">
+          <h2>Your Titles</h2>
+          <div class="skills-list">
+            {% for title in user["Titles"] %}
+              {% if is_own_profile %}
+                <span class="skill-tag" onclick="updateMainTitle('{{ title }}')">{{ title }}</span>
+              {% else %}
+                <span class="skill-tag disabled">{{ title }}</span>
+              {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function updateMainTitle(title) {
+        document.querySelector('.profile-title').textContent = title;
+
+        fetch('/update_main_title', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            new_title: title
+          })
+        })
+        .then(response => {
+          if (!response.ok) {
+            console.error('Update failed');
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+        });
+      }
+
+      async function equipCover(coverPath) {
+        try {
+          const response = await fetch('/equip_cover', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              Main_cover: coverPath
+            })
+          });
+
+          const result = await response.json();
+
+          if (result.success) {
+            document.querySelector('.profile-header').style.background = 
+              `linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('/static/images/covers/${coverPath}') center/cover`;
+          } else {
+            console.error('Failed to equip cover:', result.message);
+          }
+        } catch (error) {
+          console.error('Error equipping cover:', error);
+        }
+      }
+    </script>
+  </body>
+</html>

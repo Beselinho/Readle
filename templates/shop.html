@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Cover Shop</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='images/logo.png') }}" type="image/png">
+
+    <style>
+        .shop-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 20px;
+        }
+
+        .shop-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .points-display {
+            font-size: 1.5rem;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+        }
+
+        .covers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 2rem;
+            padding: 1rem;
+        }
+
+        .cover-card {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .cover-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .cover-image {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+        }
+
+        .cover-info {
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .cover-price {
+            font-size: 1.2rem;
+            color: #27ae60;
+            margin: 0.5rem 0;
+        }
+
+        .buy-button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .buy-button:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
+
+        .buy-button:hover:not(:disabled) {
+            background: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    {% include 'navbar_public.html' %}
+    
+    <div class="shop-container">
+        <div class="shop-header">
+            <h1>Book Cover Shop</h1>
+            <div class="points-display">
+                Your Points: {{ user.Points if user.Points else 0 }}
+            </div>
+        </div>
+
+        <div class="covers-grid">
+            {% for item in shop_items %}
+            <div class="cover-card">
+                <img src="{{ url_for('static', filename='images/covers/' + item.Image_path) }}" 
+                     class="cover-image" 
+                     alt="{{ item.name }}">
+                <div class="cover-info">
+                    <h3>{{ item.Name }}</h3>
+                    <div class="cover-price">{{ item.Price }} Points</div>
+                    <button class="buy-button" 
+                            onclick="purchaseCover('{{ item.id }}')"
+                            {% if item.Image_path in user.Covers %}disabled{% endif %}
+                            {% if not user.Points or user.Points < item.Price %}disabled{% endif %}>
+                        {% if item.Image_path in user.Covers %}
+                            Owned
+                        {% else %}
+                            Purchase
+                        {% endif %}
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <script>
+    async function purchaseCover(coverId) {
+        const response = await fetch(`/purchase_cover/${coverId}`, {
+            method: 'POST'
+        });
+        
+        const result = await response.json();
+        alert(result.message);
+        if(result.success) {
+            window.location.reload();
+        }
+    }
+    </script>
+</body>
+</html>

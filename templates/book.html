@@ -1,15 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+<head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" >
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
   <link rel="icon" href="{{ url_for('static', filename='images/logo.png') }}" type="image/png">
-
-
   <title>{{book['Name']}}</title>
 
   <style>
@@ -18,68 +16,279 @@
       margin: 0;
       padding: 0;
       background-color: #f9f9f9;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
     }
+
     main {
-      max-width: 1000px;
-      width: 50em;
+      max-width: 1200px;
+      width: 90%;
       margin: 50px auto;
       padding: 20px;
       background: #fff;
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
       border-radius: 8px;
-      text-align: center; /* Center-aligns content within the main */
+      flex: 1;
     }
+
     .book-cover {
       max-width: 300px;
       max-height: 300px;
-      /* object-fit: cover; */
       border-radius: 8px;
-      margin: 0 auto 20px; /* Centers image horizontally and adds bottom spacing */
-      display: block; /* Ensures block-level behavior for centering */
+      margin: 0 auto 20px;
+      display: block;
     }
+
     .book-title {
       font-weight: 700;
       font-size: 2rem;
       margin-bottom: 10px;
     }
+
     .book-author {
       font-weight: 500;
       font-size: 1.2rem;
       margin-bottom: 15px;
       color: #555;
     }
+
     .book-genre {
       font-size: 1rem;
       margin-bottom: 20px;
       color: #777;
     }
+
     .book-description {
       font-size: 1rem;
       line-height: 1.5;
       color: #333;
     }
-    button:hover {
-  background-color: #444; /* Darker shade of blue */
-  transform: scale(1.05); /* Slight zoom effect */
-  }
 
-button:active {
-  transform: scale(0.95); /* Slight shrink effect when clicked */
-  }
-  .star-rating {
-  display: flex;
-  justify-content: center; /* Centers the stars horizontally */
-  font-size: 50px;
-  gap: 5px; /* Adds spacing between stars */
-}
-button{
-  width:200px;
-}
+    .buttons-container {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .buttons-container button {
+      width: 200px;
+      padding: 10px;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .buttons-container button:hover {
+      background-color: #2980b9;
+    }
+
+    .buttons-container button:active {
+      transform: scale(0.98);
+    }
+
+    /* Book Container */
+    .book-container {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: 40px;
+      align-items: start;
+      height: 100%;
+    }
+
+    /* Reviews Section */
+    .reviews-section {
+      padding: 20px;
+      border-radius: 8px;
+      text-align: left;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .reviews-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .reviews-list {
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 10px;
+      margin-top: 20px;
+      max-height: 60vh;
+    }
+
+    /* Review Form */
+    .review-form {
+      margin-bottom: 20px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .review-form textarea {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      resize: vertical;
+    }
+
+    .review-form button {
+      background: #3498db;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    /* Reviews */
+    .review {
+      margin-bottom: 15px;
+      padding: 15px;
+      background: white;
+      border-radius: 6px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+      position: relative;
+    }
+
+    .review-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .review-author {
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: #444;
+    }
+
+    .review-rating {
+      color: gold;
+      margin-bottom: 5px;
+      font-size: 0.85rem;
+    }
+
+    .review-text {
+      color: #555;
+      font-size: 0.85rem;
+      line-height: 1.4;
+    }
+
+    /* Delete Review Button */
+    .delete-review {
+      background-color: #e74c3c;
+      color: white;
+      border: none;
+      padding: 3px 8px;
+      border-radius: 15px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      transition: all 0.2s ease;
+      height: 22px;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      width:25px;
+    }
+
+    .delete-review:hover {
+      background-color: #c0392b;
+      transform: scale(0.95);
+    }
+
+    .delete-review::before {
+      content: "×";
+      font-size: 1.1rem;
+      line-height: 1;
+      margin-top: -1px;
+    }
+
+    /* Average Rating Styles */
+    .average-rating {
+      margin: 20px 0;
+      text-align: center;
+    }
+
+    .static-stars {
+      display: inline-flex;
+      gap: 3px;
+      font-size: 24px;
+      margin-bottom: 5px;
+    }
+
+    .static-star {
+      color: #ccc;
+    }
+
+    .static-star.filled {
+      color: gold;
+    }
+
+    .rating-text {
+      color: #666;
+      font-size: 0.9rem;
+      margin: 0;
+    }
+
+    /* Scrollbar styling */
+    .reviews-list::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .reviews-list::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 4px;
+    }
+
+    .reviews-list::-webkit-scrollbar-thumb {
+      background: #888;
+      border-radius: 4px;
+    }
+
+    .reviews-list::-webkit-scrollbar-thumb:hover {
+      background: #555;
+    }
+
+    /* Star Rating for Reviews */
+    .star-rating {
+      display: flex;
+      justify-content: center;
+      font-size: 50px;
+      gap: 5px;
+    }
+
     .star {
       color: #ccc;
       cursor: pointer;
       transition: color 0.3s;
     }
+
+    .review-author {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #444;
+  text-decoration: none;
+  transition: color 0.2s ease;
+  cursor: pointer;
+}
+
+.review-author:hover {
+  color: #3498db;
+  text-decoration: underline;
+}
 
     .star.filled {
       color: gold;
@@ -88,45 +297,21 @@ button{
     .star.hovered {
       color: #ffcc00;
     }
-    .modal {
-      display: none; /* Hidden by default */
-      position: fixed;
-      z-index: 1000;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.5); /* Dark overlay */
-      justify-content: center;
-      align-items: center;
+
+    .login-button {
+      display: inline-block;
+      padding: 10px 15px;
+      background-color: #3498db;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+      font-weight: 600;
+      transition: background-color 0.3s ease;
     }
 
-    /* Modal Content */
-    .modal-content {
-      background: lime;
-      padding: 20px;
-      border-radius: 10px;
-      text-align: center;
-      width: 300px;
-      box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
-      animation: fadeIn 0.3s ease-in-out;
+    .login-button:hover {
+      background-color: #2980b9;
     }
-
-    .close {
-      position: absolute;
-      right: 15px;
-      top: 10px;
-      font-size: 24px;
-      cursor: pointer;
-    }
-
-    @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-
-    
   </style>
 </head>
 
@@ -134,142 +319,176 @@ button{
   {% include 'navbar_public.html' %}
 
   <main>
-    <!-- Book Cover Image -->
-    <img src="{{ url_for('static', filename='images/' ~ book['Image']) }}" 
-         class="book-cover" 
-         alt="{{ book['Name'] }}">
+    <div class="book-container">
+      <!-- Left Column: Book Details -->
+      <div class="book-details">
+        <img src="{{ url_for('static', filename='images/' ~ book['Image']) }}" class="book-cover" alt="{{ book['Name'] }}">
+        <h1 class="book-title">{{ book['Name'] }}</h1>
+        <h2 class="book-author">By {{ book['Author'] }}</h2>
+        <p class="book-genre"><strong>Genre:</strong> {{ book['Genre'] }}</p>
 
-    <!-- <h1>{{ bookId }}</h1> -->
-    <h1 class="book-title">{{ book['Name'] }}</h1>
-    <h2 class="book-author">By {{ book['Author'] }}</h2>
-    <p class="book-genre"><strong>Genre:</strong> {{ book['Genre'] }}</p>
-    <body>
-      <div class="star-rating">
-        <span class="star" data-value="1">&#9733;</span>
-        <span class="star" data-value="2">&#9733;</span>
-        <span class="star" data-value="3">&#9733;</span>
-        <span class="star" data-value="4">&#9733;</span>
-        <span class="star" data-value="5">&#9733;</span>
+        <!-- Average Rating Section -->
+        <div class="average-rating">
+          <div class="static-stars">
+            {% for i in range(5) %}
+              <span class="static-star {% if i < average_rating|round|int %}filled{% endif %}">★</span>
+            {% endfor %}
+          </div>
+          <p class="rating-text">
+            {{ "%.1f"|format(average_rating) }} ({{ num_reviews }} review{{ 's' if num_reviews != 1 }})
+          </p>
+        </div>
+
+        <div class="buttons-container">
+          <h3>
+            <a href="{{ url_for('quiz', book_id=bookId) }}">
+              <button id="take_quiz">Take the Quiz</button>
+            </a>
+          </h3>
+          <h3>
+            <button id="addFavoriteButton">Add to Favorites</button>
+          </h3>
+        </div>
       </div>
-    
-      <script>
-        const stars = document.querySelectorAll('.star');
-    
-        let currentRating = 0;
-    
-        // Hover effect
-        stars.forEach(star => {
-          star.addEventListener('mouseover', () => {
-            const value = parseInt(star.getAttribute('data-value'));
-            updateStarColors(value);
-          });
-    
-          star.addEventListener('mouseout', () => {
-            updateStarColors(currentRating);
-          });
-    
-          // Click effect
-          star.addEventListener('click', () => {
-            currentRating = parseInt(star.getAttribute('data-value'));
-            updateStarColors(currentRating);
-          });
-        });
-    
-        // Function to update the colors of the stars
-        function updateStarColors(rating) {
-          stars.forEach(star => {
-            const value = parseInt(star.getAttribute('data-value'));
-            if (value <= rating) {
-              star.classList.add('filled');
-              star.classList.remove('hovered');
-            } else {
-              star.classList.remove('filled');
-              if (value <= rating) {
-                star.classList.add('hovered');
-              } else {
-                star.classList.remove('hovered');
-              }
-            }
-          });
-        }
-      </script>
-    <h3>
-      <a href="{{ url_for('quiz', book_id=bookId) }}">
-        <button id="take_quiz">Take the Quiz</button>
-      </a>
-    </h3>
-    <h3>
-      <button id="addFavoriteButton">Add to Favorites</button>
-    </h3>
 
-      {% if reward_message %}
-  <div id="failModal" class="modal">
-    <div class="modal-content">
-      <span class="close">&times;</span>
-      <h2>Quiz Attempt Result</h2>
-      <p>{{ reward_message }}</p>
+      <!-- Right Column: Reviews -->
+      <div class="reviews-section">
+        <h2>Reviews</h2>
+        <div class="reviews-content">
+          {% if 'user' in session %}
+          <div class="review-form">
+            <h3>Write a Review</h3>
+            <div class="star-rating review-stars">
+              <span class="star" data-value="1">&#9733;</span>
+              <span class="star" data-value="2">&#9733;</span>
+              <span class="star" data-value="3">&#9733;</span>
+              <span class="star" data-value="4">&#9733;</span>
+              <span class="star" data-value="5">&#9733;</span>
+            </div>
+            <textarea id="review-text" placeholder="Write your review..." rows="4"></textarea>
+            <button onclick="submitReview('{{ bookId }}')">Submit Review</button>
+          </div>
+          {% else %}
+          <p>
+            <a href="{{ url_for('login') }}" class="login-button">Login</a> to write a review
+          </p>
+          {% endif %}
+
+          <div class="reviews-list">
+            {% for review in reviews %}
+            <div class="review">
+              <div class="review-header">
+                <a href="{{ url_for('user_profile', user_id=review.user_id) }}" class="review-author">
+                  {{ review.user_name }}
+                </a>
+                {% if 'user' in session and review.user_id == session['user']['user_id'] %}
+                  <button class="delete-review" onclick="deleteReview('{{ bookId }}', '{{ review.id }}')" title="Delete review"></button>
+                {% endif %}
+              </div>
+              <div class="review-rating">
+                {% for i in range(review.rating) %}★{% endfor %}
+              </div>
+              <div class="review-text">{{ review.text }}</div>
+            </div>
+            {% else %}
+            <p>No reviews yet. Be the first to write one!</p>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
     </div>
-  </div>
-  {% endif %}
-
   </main>
 
   {% include 'footer.html' %}
 
   <script src="{{ url_for('static', filename='scripts.js') }}" type="module"></script>
-</body>
 
-<script>
-  document.getElementById('addFavoriteButton').addEventListener('click', async () => {
-      const bookId = "{{ bookId }}"; // Pass bookId dynamically from Flask
-  
-      if (!bookId) {
-          alert('Book ID is missing!');
-          return;
+  <script>
+    // JS for handling reviews, stars, and submission
+    const stars = document.querySelectorAll('.star');
+    let currentRating = 0;
+
+    stars.forEach(star => {
+      star.addEventListener('mouseover', () => {
+        const value = parseInt(star.getAttribute('data-value'));
+        updateStarColors(value);
+      });
+
+      star.addEventListener('mouseout', () => {
+        updateStarColors(currentRating);
+      });
+
+      star.addEventListener('click', () => {
+        currentRating = parseInt(star.getAttribute('data-value'));
+        updateStarColors(currentRating);
+      });
+    });
+
+    function updateStarColors(rating) {
+      stars.forEach(star => {
+        const value = parseInt(star.getAttribute('data-value'));
+        if (value <= rating) {
+          star.classList.add('filled');
+          star.classList.remove('hovered');
+        } else {
+          star.classList.remove('filled');
+          star.classList.remove('hovered');
+        }
+      });
+    }
+
+    async function submitReview(bookId) {
+      const reviewText = document.getElementById('review-text').value;
+      if (!currentRating) {
+        alert('Please select a rating');
+        return;
       }
-  
+
       try {
-          const response = await fetch(`/book/${bookId}/add_favorite`, {
-              method: 'POST',
-              headers: {
-                  'Content-Type': 'application/json',
-              },
-          });
-  
-          const result = await response.json();
-  
-          if (result.success) {
-              alert('Book added to favorites!');
-          } else {
-              alert('Error: ' + result.message);
-          }
+        const response = await fetch(`/book/${bookId}/submit_review`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            rating: currentRating,
+            text: reviewText
+          })
+        });
+
+        if (response.ok) {
+          window.location.reload();
+        } else {
+          alert('Error submitting review');
+        }
       } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to submit review');
+      }
+    }
+
+    // Function to delete a review
+    function deleteReview(bookId, reviewId) {
+      if (confirm('Are you sure you want to delete this review?')) {
+        fetch(`/book/${bookId}/delete_review/${reviewId}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+        .then(response => {
+          if (response.ok) {
+            window.location.reload();
+          } else {
+            response.json().then(data => alert(data.message));
+          }
+        })
+        .catch(error => {
           console.error('Error:', error);
-          alert('An error occurred while adding the book to favorites.');
+          alert('Error deleting review');
+        });
       }
-  });
-
-  window.onload = function() {
-    var modal = document.getElementById("failModal");
-    var closeBtn = modal ? modal.querySelector(".close") : null;
-    var rewardMessage = "{{ reward_message | default('') }}";
-
-    if (rewardMessage.trim() !== "" && modal) {
-      modal.style.display = "flex"; 
     }
-
-    if (closeBtn) {
-      closeBtn.onclick = function() {
-        modal.style.display = "none";
-      };
-    }
-
-    window.onclick = function(event) {
-      if (modal && event.target == modal) {
-        modal.style.display = "none";
-      }
-    };
-  };
   </script>
-
+</body>
 </html>
