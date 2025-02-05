@@ -103,7 +103,7 @@ button{
 
     /* Modal Content */
     .modal-content {
-      background: lime;
+      background: #f5d2d2;
       padding: 20px;
       border-radius: 10px;
       text-align: center;
@@ -112,21 +112,20 @@ button{
       animation: fadeIn 0.3s ease-in-out;
     }
 
+    /* Close Button */
     .close {
       position: absolute;
       right: 15px;
       top: 10px;
-      font-size: 24px;
+      font-size: 20px;
       cursor: pointer;
     }
 
     @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
 
-
-    
   </style>
 </head>
 
@@ -201,17 +200,15 @@ button{
     <h3>
       <button id="addFavoriteButton">Add to Favorites</button>
     </h3>
-
-      {% if reward_message %}
-  <div id="failModal" class="modal">
-    <div class="modal-content">
-      <span class="close">&times;</span>
-      <h2>Quiz Attempt Result</h2>
-      <p>{{ reward_message }}</p>
+    {% if show_cooldown %}
+    <div id="cooldownModal" class="modal">
+      <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>Cooldown</h2>
+        <p>{{ cooldown_message }}</p>
+      </div>
     </div>
-  </div>
-  {% endif %}
-
+    {% endif %}
   </main>
 
   {% include 'footer.html' %}
@@ -248,28 +245,32 @@ button{
           alert('An error occurred while adding the book to favorites.');
       }
   });
+    window.onload = function() {
+    const cooldownModal = document.getElementById("cooldownModal");
+    const closeBtns = document.querySelectorAll(".close");
+    const bookId = "{{ bookId }}";
 
-  window.onload = function() {
-    var modal = document.getElementById("failModal");
-    var closeBtn = modal ? modal.querySelector(".close") : null;
-    var rewardMessage = "{{ reward_message | default('') }}";
-
-    if (rewardMessage.trim() !== "" && modal) {
-      modal.style.display = "flex"; 
+    // Show the cooldown modal if it's present
+    if (cooldownModal) {
+      cooldownModal.style.display = "flex";
     }
 
-    if (closeBtn) {
-      closeBtn.onclick = function() {
-        modal.style.display = "none";
+    // Close modal and redirect when clicking the close button or outside the modal
+    closeBtns.forEach(btn => {
+      btn.onclick = () => {
+        if (cooldownModal) cooldownModal.style.display = "none";
+        window.location.href = "/book/" + bookId;
       };
-    }
+    });
 
-    window.onclick = function(event) {
-      if (modal && event.target == modal) {
-        modal.style.display = "none";
+    window.onclick = (event) => {
+      if (event.target === cooldownModal) {
+        if (cooldownModal) cooldownModal.style.display = "none";
+        window.location.href = "/book/" + bookId;
       }
     };
   };
+
   </script>
 
 </html>

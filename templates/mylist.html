@@ -110,6 +110,60 @@ h1 {
   font-size: 0.8rem;
   padding: 4px 8px;
 }
+
+/* General form styling */
+.add-note-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+/* Apply consistent styling to the dropdown */
+.add-note-form select,
+.add-note-form input,
+.add-note-form textarea {
+  width: 100%;
+  padding: 12px; /* Increased padding */
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  background-color: #fff;
+  font-family: 'Poppins', sans-serif;
+  color: #333;
+  box-sizing: border-box; /* Prevents width issues */
+}
+
+/* Ensure the dropdown looks like an input field */
+.add-note-form select {
+  appearance: none; /* Remove default OS styling */
+  cursor: pointer;
+}
+
+/* Improve dropdown arrow */
+.add-note-form select:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+}
+
+/* Improve button styling */
+.add-note-form button {
+  width: 100%;
+  padding: 12px;
+  font-size: 1rem;
+  border: none;
+  border-radius: 5px;
+  background-color: #007bff;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.add-note-form button:hover {
+  background-color: #0056b3;
+}
+
   </style>
 </head>
 <body>

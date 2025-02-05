@@ -86,21 +86,46 @@
               background-color: #388e3c;
             }
 
-            .add-note-form input, .add-note-form textarea {
-              width: 100%;
-              padding: 8px;
-              margin-bottom: 10px;
-              border: 1px solid #ddd;
-              border-radius: 4px;
+            select#bookSelect {
+              width: 100%; /* Make it the same width as other input fields */
+              padding: 8px; /* Add padding for better appearance */
+              font-size: 1rem; /* Match font size */
+              border: 1px solid #ccc; /* Standard border */
+              border-radius: 4px; /* Rounded corners */
+              background-color: #fff; /* Keep it consistent with input fields */
+              font-family: 'Poppins', sans-serif; /* Use the same font */
+              color: #333; /* Darker text for readability */
             }
+
+            select#bookSelect:focus {
+              outline: none;
+              border-color: #007bff; /* Highlight on focus */
+              box-shadow: 0 0 5px rgba(0, 123, 255, 0.5); /* Add subtle glow */
+            }
+
+            .add-note-form select, 
+            .add-note-form input, 
+            .add-note-form textarea {
+              width: 100%;
+              padding: 10px;
+              margin-bottom: 10px; /* Add spacing between elements */
+              border: 1px solid #ddd;
+              border-radius: 5px;
+              font-size: 1rem;
+            }
+
             .add-note-form button {
+              width: 100%; /* Make button match input width */
+              padding: 10px;
+              font-size: 1rem;
+              border: none;
+              border-radius: 5px;
               background-color: #007bff;
               color: white;
-              border: none;
-              padding: 10px 15px;
-              border-radius: 4px;
               cursor: pointer;
+              transition: background-color 0.3s ease;
             }
+
             .add-note-form button:hover {
               background-color: #0056b3;
             }
@@ -108,50 +133,55 @@
           </style>
         </head>
 <body>
-    {% include 'navbar_public.html' %}
-        <div class="container">
-            <h1>Book Notes</h1>
+  {% include 'navbar_public.html' %}
+  <div class="container">
+      <h1>Book Notes</h1>
 
-            <!-- Formular pentru adăugare notă nouă -->
-            <div class="add-note-form">
-                <h2>Add Note</h2>
-                <input type="text" id="bookName" placeholder="Book Name" required>
-                <input type="number" id="pageNumber" placeholder="Page number" required>
-                <textarea id="noteText" placeholder="Text" required></textarea>
-                <button id="addNoteButton">Add</button>
-            </div>
+      <!-- Add Note Form -->
+      <div class="add-note-form">
+          <h2>Add Note</h2>
 
-            <ul class="book-list">
-                {% for note in notes %}
-                  <li class="book-item">
-                    <a style="text-decoration:none;">
-                      <span class="book-title">{{ note['Book_Name'] }}</span>
-                    </a>
-                    {% for p_notes in note['Notes'] %}
-                      <span class="book-page">Page Number: {{ p_notes['Page_nr'] }}</span>
-                      <span class="book-genre">Note: {{ p_notes['Text'] }}</span>
-                      
-                      <!-- Container pentru alinierea butoanelor -->
+          <!-- Dropdown Menu for Selecting Book -->
+          <select id="bookSelect" required>
+              <option value="" disabled selected>Select a book</option>
+              {% for book in books %}
+                  <option value="{{ book.id }}">{{ book.name }}</option>
+              {% endfor %}
+          </select>
+
+          <input type="number" id="pageNumber" placeholder="Page number" required>
+          <textarea id="noteText" placeholder="Text" required></textarea>
+          <button id="addNoteButton">Add</button>
+      </div>
+
+      <!-- Display Notes -->
+      <ul class="book-list">
+          {% for note in notes %}
+              <li class="book-item">
+                  <span class="book-title">{{ note['Book_Name'] }}</span>
+                  {% for p_notes in note['Notes'] %}
+                      <span class="book-page">Page: {{ p_notes['Page_nr'] }}</span>
+                      <span class="book-note">Note: {{ p_notes['Text'] }}</span>
                       <div class="button-container">
-                        <button class="delete-note" 
-                                data-id="{{ note['id'] }}" 
-                                data-page="{{ p_notes['Page_nr'] }}" 
-                                data-text="{{ p_notes['Text'] }}">
-                          Delete
-                        </button>
-                        <button class="edit-note" 
-                                data-id="{{ note['id'] }}" 
-                                data-page="{{ p_notes['Page_nr'] }}" 
-                                data-text="{{ p_notes['Text'] }}">
-                          Edit
-                        </button>
+                          <button class="delete-note" 
+                                  data-id="{{ note['id'] }}" 
+                                  data-page="{{ p_notes['Page_nr'] }}" 
+                                  data-text="{{ p_notes['Text'] }}">
+                              Delete
+                          </button>
+                          <button class="edit-note" 
+                                  data-id="{{ note['id'] }}" 
+                                  data-page="{{ p_notes['Page_nr'] }}" 
+                                  data-text="{{ p_notes['Text'] }}">
+                              Edit
+                          </button>
                       </div>
-                    {% endfor %}
-                  </li>
-                {% endfor %}
-            </ul>
-        </div>
-    {% include 'footer.html' %}
+                  {% endfor %}
+              </li>
+          {% endfor %}
+      </ul>
+  </div>
+  {% include 'footer.html' %}
     
     <!-- Codul JavaScript rămâne neschimbat -->
     <script>
@@ -214,12 +244,13 @@
         });
 
         document.getElementById('addNoteButton').addEventListener('click', async () => {
-            const bookName = document.getElementById('bookName').value;
+            const bookId = document.getElementById('bookSelect').value;
+            const bookName = document.getElementById('bookSelect').options[document.getElementById('bookSelect').selectedIndex].text;
             const pageNumber = document.getElementById('pageNumber').value;
             const noteText = document.getElementById('noteText').value;
 
-            if (!bookName || !pageNumber || !noteText) {
-                alert('Toate câmpurile sunt obligatorii!');
+            if (!bookId || !pageNumber || !noteText) {
+                alert('All fields are required!');
                 return;
             }
 
@@ -229,18 +260,19 @@
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
+                    Book_ID: bookId,
                     Book_Name: bookName,
-                    Page_nr: pageNumber,
+                    Page_nr: parseInt(pageNumber),
                     Text: noteText,
                 }),
             });
 
             const result = await response.json();
             if (result.success) {
-                alert('Notă adăugată!');
+                alert('Note added successfully!');
                 location.reload();
             } else {
-                alert('Eroare: ' + result.message);
+                alert('Error: ' + result.message);
             }
         });
     </script>

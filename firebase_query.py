@@ -49,6 +49,11 @@ def update_existing_document(db,collection,docID,updated_field,updated_value):
     })
 
 
+def update_document(db, collection, doc_id, data):
+    doc_ref = db.collection(collection).document(doc_id)
+    doc_ref.set(data, merge=True)
+
+
 
     # Get the document you want to update by its ID
 
